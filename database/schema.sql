@@ -16,3 +16,14 @@ CREATE TABLE IF NOT EXISTS ratings (
   comment TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS orders (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  guild_id TEXT,
+  user_id TEXT,
+  product_id TEXT,
+  channel_id TEXT,
+  quantity INTEGER DEFAULT 1,
+  status TEXT DEFAULT 'pending',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
