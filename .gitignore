@@ -10,7 +10,8 @@ logs/
 *.log
 
 # Database
-database/
+database/*
+!database/schema.sql
 
 # OS
 .DS_Store
