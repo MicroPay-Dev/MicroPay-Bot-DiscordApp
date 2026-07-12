@@ -27,3 +27,15 @@ CREATE TABLE IF NOT EXISTS orders (
   status TEXT DEFAULT 'pending',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS joki_quest_orders (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  order_id INTEGER,
+  guild_id TEXT,
+  user_id TEXT,
+  status TEXT DEFAULT 'awaiting_form',
+  catatan TEXT,
+  submitted_at DATETIME,
+  wiped_at DATETIME,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
