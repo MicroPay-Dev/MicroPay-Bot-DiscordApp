@@ -39,3 +39,23 @@ CREATE TABLE IF NOT EXISTS joki_quest_orders (
   wiped_at DATETIME,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS youtube_channels (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  guild_id TEXT,
+  channel_id TEXT,
+  youtube_channel_id TEXT,
+  youtube_channel_name TEXT,
+  last_check DATETIME,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS youtube_videos (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  guild_id TEXT,
+  youtube_video_id TEXT,
+  title TEXT,
+  url TEXT,
+  published_at DATETIME,
+  notified_at DATETIME
+);
