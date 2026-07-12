@@ -3,7 +3,7 @@ const BackupService = require('../../services/BackupService');
 const BumpReminderService = require('../../services/BumpReminderService');
 
 module.exports = {
-  name: 'ready',
+  name: 'clientReady',
   once: true,
   execute(client) {
     console.log(`✅ MICROSTORE logged in as ${client.user.tag}`);
