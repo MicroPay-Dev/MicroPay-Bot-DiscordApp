@@ -1,0 +1,267 @@
+/* ===========================================================
+   MICROSTORE_OS — Cyberpunk Dashboard Theme
+   Token system:
+   - Color: void/panel surfaces + cyan/magenta/amber neon accents
+   - Type:  Orbitron (display) / Rajdhani (UI) / Share Tech Mono (data)
+   - Signature: HUD corner-bracket frame on every panel + ambient scanline
+   =========================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --bg-void: #070a10;
+  --bg-panel: #0d131c;
+  --bg-panel-raised: #131b27;
+  --bg-input: #0a0f17;
+
+  --accent-cyan: #00f0ff;
+  --accent-cyan-dim: #0a8a99;
+  --accent-magenta: #ff2d75;
+  --accent-amber: #ffc23c;
+
+  --text-primary: #d8e6f3;
+  --text-dim: #5b7185;
+  --text-bright: #f2fbff;
+
+  --success: #39ff88;
+  --danger: #ff4d6d;
+
+  --border-line: rgba(0, 240, 255, 0.25);
+  --border-line-bright: rgba(0, 240, 255, 0.6);
+
+  --font-display: 'Orbitron', sans-serif;
+  --font-ui: 'Rajdhani', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  min-height: 100vh;
+}
+
+body {
+  background-image:
+    linear-gradient(rgba(0, 240, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.035) 1px, transparent 1px);
+  background-size: 36px 36px;
+  position: relative;
+}
+
+/* Ambient ultra-subtle scanline sweep — the page's signature atmosphere */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 240, 255, 0.04) 50%,
+    transparent 100%
+  );
+  background-size: 100% 6px;
+  animation: scanline-sweep 10s linear infinite;
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before { animation: none; }
+}
+
+@keyframes scanline-sweep {
+  0% { background-position: 0 -100vh; }
+  100% { background-position: 0 100vh; }
+}
+
+a { color: var(--accent-cyan); text-decoration: none; }
+
+h1, h2, h3, .display {
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+  color: var(--text-bright);
+  text-transform: uppercase;
+}
+
+.mono { font-family: var(--font-mono); }
+
+/* ---------- HUD Panel: the signature element ----------
+   Every card/panel gets corner brackets, like a HUD targeting frame. */
+.hud-panel {
+  position: relative;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-line);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.hud-panel::before,
+.hud-panel::after,
+.hud-panel .corner-br,
+.hud-panel .corner-bl {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
+
+.hud-panel::before { /* top-left */
+  top: -1px; left: -1px;
+  border-top: 2px solid var(--accent-cyan);
+  border-left: 2px solid var(--accent-cyan);
+}
+.hud-panel::after { /* top-right */
+  top: -1px; right: -1px;
+  border-top: 2px solid var(--accent-cyan);
+  border-right: 2px solid var(--accent-cyan);
+}
+.hud-panel .corner-bl { /* bottom-left */
+  bottom: -1px; left: -1px;
+  border-bottom: 2px solid var(--accent-cyan);
+  border-left: 2px solid var(--accent-cyan);
+}
+.hud-panel .corner-br { /* bottom-right */
+  bottom: -1px; right: -1px;
+  border-bottom: 2px solid var(--accent-cyan);
+  border-right: 2px solid var(--accent-cyan);
+}
+
+.hud-panel:hover {
+  border-color: var(--border-line-bright);
+  box-shadow: 0 0 24px -8px var(--accent-cyan);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.hud-panel .panel-title {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  color: var(--accent-cyan);
+  text-transform: uppercase;
+  margin: 0 0 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hud-panel .panel-title::before {
+  content: '//';
+  color: var(--text-dim);
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  padding: 0.65rem 1.3rem;
+  background: transparent;
+  border: 1px solid var(--accent-cyan);
+  color: var(--accent-cyan);
+  cursor: pointer;
+  transition: all 0.15s;
+  border-radius: 2px;
+}
+.btn:hover {
+  background: var(--accent-cyan);
+  color: var(--bg-void);
+  box-shadow: 0 0 16px var(--accent-cyan);
+}
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-magenta { border-color: var(--accent-magenta); color: var(--accent-magenta); }
+.btn-magenta:hover { background: var(--accent-magenta); box-shadow: 0 0 16px var(--accent-magenta); color: var(--bg-void); }
+
+.btn-ghost { border-color: var(--text-dim); color: var(--text-dim); }
+.btn-ghost:hover { background: var(--text-dim); color: var(--bg-void); box-shadow: none; }
+
+.btn-danger { border-color: var(--danger); color: var(--danger); }
+.btn-danger:hover { background: var(--danger); color: var(--bg-void); box-shadow: 0 0 16px var(--danger); }
+.btn-sm { padding: 0.3rem 0.8rem; font-size: 0.78rem; }
+
+/* ---------- Form controls ---------- */
+input, select, textarea {
+  font-family: var(--font-ui);
+  background: var(--bg-input);
+  border: 1px solid var(--border-line);
+  color: var(--text-primary);
+  padding: 0.6rem 0.8rem;
+  border-radius: 2px;
+  width: 100%;
+  font-size: 0.95rem;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 1px var(--accent-cyan);
+}
+label {
+  display: block;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 0.35rem;
+  margin-top: 0.9rem;
+}
+label:first-child { margin-top: 0; }
+
+/* ---------- Status badges ---------- */
+.badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.badge-success { background: rgba(57,255,136,0.12); color: var(--success); border: 1px solid var(--success); }
+.badge-danger { background: rgba(255,77,109,0.12); color: var(--danger); border: 1px solid var(--danger); }
+.badge-pending { background: rgba(255,194,60,0.12); color: var(--accent-amber); border: 1px solid var(--accent-amber); }
+.badge-dim { background: rgba(91,113,133,0.12); color: var(--text-dim); border: 1px solid var(--text-dim); }
+
+/* ---------- Misc ---------- */
+.text-dim { color: var(--text-dim); }
+.text-cyan { color: var(--accent-cyan); }
+.text-magenta { color: var(--accent-magenta); }
+.text-success { color: var(--success); }
+.text-danger { color: var(--danger); }
+
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.gap-1 { gap: 0.5rem; }
+.gap-2 { gap: 1rem; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th { text-align: left; font-family: var(--font-display); font-size: 0.7rem; letter-spacing: 0.08em; color: var(--text-dim); text-transform: uppercase; padding: 0.6rem 0.5rem; border-bottom: 1px solid var(--border-line); }
+td { padding: 0.6rem 0.5rem; border-bottom: 1px solid rgba(91,113,133,0.15); }
+tr:hover td { background: rgba(0, 240, 255, 0.03); }
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-void); }
+::-webkit-scrollbar-thumb { background: var(--accent-cyan-dim); }
+
+:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+}

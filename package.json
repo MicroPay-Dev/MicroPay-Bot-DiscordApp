@@ -1,0 +1,21 @@
+{
+  "name": "microstore",
+  "version": "0.9.0",
+  "private": true,
+  "description": "MICROSTORE - Private Discord store bot (Welcome, Verification, Tickets, QRIS Payment Engine, Buyer Role, Product Delivery, Logs)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "deploy-commands": "node deploy-commands.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.21.0",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "better-sqlite3": "^12.2.0"
+  },
+  "engines": {
+    "node": ">=18.18.0"
+  }
+}

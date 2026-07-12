@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MICROSTORE_OS // Login</title>
+<link rel="stylesheet" href="/css/theme.css">
+<style>
+  body { display: flex; align-items: center; justify-content: center; }
+
+  .login-shell { width: 100%; max-width: 420px; padding: 1.5rem; }
+
+  .login-shell .hud-panel { padding: 2.5rem 2rem; text-align: center; }
+
+  .login-shell .corner-bl, .login-shell .corner-br { display: block; }
+
+  .logo {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--text-bright);
+    letter-spacing: 0.08em;
+    margin-bottom: 0.2rem;
+  }
+  .logo span { color: var(--accent-cyan); }
+
+  .tagline {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-bottom: 2rem;
+  }
+
+  .boot-line {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--accent-cyan);
+    text-align: left;
+    margin: 0 0 1.5rem 0;
+    line-height: 1.6;
+    border-left: 2px solid var(--border-line);
+    padding-left: 0.8rem;
+  }
+  .boot-line .ok { color: var(--success); }
+
+  .discord-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.85rem 1rem;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    background: var(--accent-cyan);
+    color: var(--bg-void);
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: box-shadow 0.15s, transform 0.1s;
+  }
+  .discord-btn:hover { box-shadow: 0 0 24px var(--accent-cyan); }
+  .discord-btn:active { transform: scale(0.98); }
+
+  .login-footnote {
+    margin-top: 1.5rem;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+  }
+
+  #error-banner {
+    display: none;
+    background: rgba(255,77,109,0.12);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    padding: 0.7rem 1rem;
+    margin-bottom: 1.5rem;
+    text-align: left;
+  }
+</style>
+</head>
+<body>
+
+  <div class="login-shell">
+    <div class="hud-panel">
+      <span class="corner-bl"></span><span class="corner-br"></span>
+
+      <div id="error-banner"></div>
+
+      <div class="logo">MICRO<span>STORE</span>_OS</div>
+      <div class="tagline">// Toko digital management terminal</div>
+
+      <div class="boot-line">
+        SYSTEM CHECK<span class="ok">.... OK</span><br>
+        BOT CONNECTION<span class="ok">.. OK</span><br>
+        AWAITING AUTH<span style="color:var(--accent-amber)">.... STANDBY</span>
+      </div>
+
+      <button class="discord-btn" onclick="window.location.href='/auth/login'">
+        ▸ Login dengan Discord
+      </button>
+
+      <div class="login-footnote">
+        Akses hanya untuk admin server yang sudah memasang bot MICROSTORE.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const err = params.get('error');
+    if (err) {
+      const banner = document.getElementById('error-banner');
+      banner.style.display = 'block';
+      banner.textContent = 'LOGIN GAGAL: ' + err;
+    }
+
+    // If already logged in, skip straight to dashboard.
+    fetch('/auth/me').then(r => {
+      if (r.ok) window.location.href = '/dashboard.html';
+    }).catch(() => {});
+  </script>
+
+</body>
+</html>
