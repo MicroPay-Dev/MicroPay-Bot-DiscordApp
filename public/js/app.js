@@ -189,35 +189,6 @@ async function renderProducts() {
 
     <div class="hud-panel">
       <span class="corner-bl"></span><span class="corner-br"></span>
-      <div class="panel-title">Tambah Produk Baru</div>
-      <form id="product-form">
-        <label>Nama Produk</label>
-        <input name="name" required>
-        <label>Harga (Rp)</label>
-        <input name="price" type="number" required min="0">
-        <label>Tipe</label>
-        <select name="type">
-          <option value="general">General (kirim teks delivery content)</option>
-          <option value="joki_quest">Joki Quest (form login + target quest)</option>
-          <option value="auto_quest_vip">Auto Quest VIP (kirim file zip)</option>
-          <option value="web_panel">Web Panel (form nama website/brand/domain)</option>
-        </select>
-        <label>Deskripsi</label>
-        <input name="description">
-        <label>Delivery Content (dikirim otomatis ke buyer, untuk tipe General)</label>
-        <textarea name="delivery_content" rows="3"></textarea>
-        <div style="margin-top:1.2rem;"><button class="btn" type="submit">+ Tambah Produk</button></div>
-      </form>
-    </div>
-
-    <div class="hud-panel">
-      <span class="corner-bl"></span><span class="corner-br"></span>
-      <div class="panel-title">Daftar Produk (${products.length})</div>
-      <div id="product-list"></div>
-    </div>
-
-    <div class="hud-panel">
-      <span class="corner-bl"></span><span class="corner-br"></span>
       <div class="panel-title">💬 Pesan Ticket Saat Belum Ada Produk</div>
       <form id="empty-message-form">
         <label>Pesan ini muncul di ticket order kalau belum ada produk aktif</label>
@@ -251,29 +222,6 @@ async function renderProducts() {
     </div>
   `;
 
-  const renderList = (list) => {
-    document.getElementById('product-list').innerHTML = list.length
-      ? `<table><thead><tr><th>ID</th><th>Nama</th><th>Harga</th><th>Tipe</th><th></th></tr></thead><tbody>
-          ${list.map((p) => `<tr><td class="mono">#${p.id}</td><td>${escapeHtml(p.name)}</td><td class="mono text-cyan">${fmtRupiah(p.price)}</td><td><span class="badge badge-dim">${escapeHtml(p.type)}</span></td><td><button class="btn btn-danger btn-sm" data-delete-id="${p.id}">Hapus</button></td></tr>`).join('')}
-        </tbody></table>`
-      : `<div class="empty-state">Belum ada produk. Tambahkan lewat form di atas.</div>`;
-
-    document.querySelectorAll('[data-delete-id]').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const id = btn.getAttribute('data-delete-id');
-        if (!confirm('Yakin ingin menghapus produk ini? Produk tidak akan muncul lagi di list/order panel.')) return;
-        try {
-          await Api.delete(`/api/dashboard/guilds/${state.guildId}/products/${id}`);
-          toast('Produk berhasil dihapus');
-          renderProducts();
-        } catch (err) {
-          toast('Gagal: ' + err.message, true);
-        }
-      });
-    });
-  };
-  renderList(products);
-
   // Populate catalog channel dropdown from meta
   const catalogChannelSelect = document.getElementById('catalog-channel');
   if (catalogChannelSelect && state.meta?.channels) {
@@ -284,24 +232,6 @@ async function renderProducts() {
       catalogChannelSelect.appendChild(opt);
     });
   }
-
-  document.getElementById('product-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    try {
-      await Api.post(`/api/dashboard/guilds/${state.guildId}/products`, {
-        name: fd.get('name'),
-        price: fd.get('price'),
-        type: fd.get('type'),
-        description: fd.get('description'),
-        delivery_content: fd.get('delivery_content'),
-      });
-      toast('Produk berhasil ditambahkan');
-      renderProducts();
-    } catch (err) {
-      toast('Gagal: ' + err.message, true);
-    }
-  });
 
   document.getElementById('empty-message-form').addEventListener('submit', async (e) => {
     e.preventDefault();

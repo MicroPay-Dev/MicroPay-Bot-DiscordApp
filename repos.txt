@@ -1,0 +1,484 @@
+===== src/repositories/jokiQuestRepo.js =====
+const db = require('../database');
+
+module.exports = {
+  create(orderId, guildId, userId) {
+    const info = db
+      .prepare(`INSERT INTO joki_quest_orders(order_id, guild_id, user_id, status) VALUES (?,?,?,'awaiting_form')`)
+      .run(orderId, guildId, userId);
+    return this.getById(info.lastInsertRowid);
+  },
+
+  getById(id) {
+    return db.prepare('SELECT * FROM joki_quest_orders WHERE id = ?').get(id);
+  },
+
+  getByOrderId(orderId) {
+    return db.prepare('SELECT * FROM joki_quest_orders WHERE order_id = ? ORDER BY id DESC LIMIT 1').get(orderId);
+  },
+
+  saveForm(id, { discordEmail, passwordDiscord, backupCode, catatan }) {
+    db.prepare(
+      `UPDATE joki_quest_orders
+       SET discord_email = ?, password_discord = ?, backup_code = ?, catatan = ?,
+           status = 'submitted', submitted_at = CURRENT_TIMESTAMP
+       WHERE id = ?`
+    ).run(discordEmail, passwordDiscord, backupCode || null, catatan || null, id);
+  },
+
+  /**
+   * Wipe sensitive credentials once the joki job is done, so they don't sit
+   * in the database indefinitely. Keeps the row (for history) but nulls out
+   * email/password/backup code.
+   */
+  wipeCredentials(id) {
+    db.prepare(
+      `UPDATE joki_quest_orders
+       SET discord_email = NULL, password_discord = NULL, backup_code = NULL,
+           status = 'wiped', wiped_at = CURRENT_TIMESTAMP
+       WHERE id = ?`
+    ).run(id);
+  },
+};
+
+===== src/repositories/logRepo.js =====
+const db = require('../database');
+
+module.exports = {
+  add(guildId, type, message) {
+    db.prepare('INSERT INTO logs(guild_id, type, message) VALUES (?,?,?)').run(guildId, type, message);
+  },
+
+  recent(guildId, limit = 50) {
+    return db
+      .prepare('SELECT * FROM logs WHERE guild_id = ? ORDER BY id DESC LIMIT ?')
+      .all(guildId, limit);
+  },
+
+  getByGuild(guildId, type = null, limit = 100) {
+    if (type) {
+      return db
+        .prepare('SELECT * FROM logs WHERE guild_id = ? AND type = ? ORDER BY id DESC LIMIT ?')
+        .all(guildId, type, limit);
+    }
+    return db
+      .prepare('SELECT * FROM logs WHERE guild_id = ? ORDER BY id DESC LIMIT ?')
+      .all(guildId, limit);
+  },
+};
+
+===== src/repositories/orderRepo.js =====
+const db = require('../database');
+
+module.exports = {
+  create(guildId, userId, productId, channelId, quantity = 1) {
+    const info = db
+      .prepare(
+        `INSERT INTO orders(guild_id, user_id, product_id, channel_id, quantity, status)
+         VALUES (?,?,?,?,?,'pending')`
+      )
+      .run(guildId, userId, productId, channelId, quantity);
+    return this.getById(info.lastInsertRowid);
+  },
+
+  getById(id) {
+    return db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
+  },
+
+  getByChannel(channelId) {
+    return db.prepare('SELECT * FROM orders WHERE channel_id = ? ORDER BY id DESC LIMIT 1').get(channelId);
+  },
+
+  setStatus(id, status) {
+    db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, id);
+  },
+
+  listByGuild(guildId, limit = 50) {
+    return db
+      .prepare('SELECT * FROM orders WHERE guild_id = ? ORDER BY id DESC LIMIT ?')
+      .all(guildId, limit);
+  },
+};
+
+===== src/repositories/paymentRepo.js =====
+const db = require('../database');
+
+module.exports = {
+  create(guildId, orderId, userId, amount) {
+    const info = db
+      .prepare(
+        `INSERT INTO payments(guild_id, order_id, user_id, amount, status)
+         VALUES (?,?,?,?,'pending')`
+      )
+      .run(guildId, orderId, userId, amount);
+    return this.getById(info.lastInsertRowid);
+  },
+
+  getById(id) {
+    return db.prepare('SELECT * FROM payments WHERE id = ?').get(id);
+  },
+
+  getLatestByOrder(orderId) {
+    return db
+      .prepare('SELECT * FROM payments WHERE order_id = ? ORDER BY id DESC LIMIT 1')
+      .get(orderId);
+  },
+
+  attachProof(id, proofUrl) {
+    db.prepare(`UPDATE payments SET proof_url = ?, status = 'proof_uploaded' WHERE id = ?`).run(
+      proofUrl,
+      id
+    );
+  },
+
+  approve(id, reviewerId) {
+    db.prepare(
+      `UPDATE payments SET status = 'approved', reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?`
+    ).run(reviewerId, id);
+  },
+
+  reject(id, reviewerId) {
+    db.prepare(
+      `UPDATE payments SET status = 'rejected', reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?`
+    ).run(reviewerId, id);
+  },
+
+  listByGuild(guildId, limit = 50) {
+    return db
+      .prepare('SELECT * FROM payments WHERE guild_id = ? ORDER BY id DESC LIMIT ?')
+      .all(guildId, limit);
+  },
+};
+
+===== src/repositories/productRepo.js =====
+const db = require('../database');
+
+module.exports = {
+  add(guildId, { name, type, price, description, deliveryContent }) {
+    const info = db
+      .prepare(
+        `INSERT INTO products(guild_id, name, type, price, description, delivery_content, status)
+         VALUES (?,?,?,?,?,?,'active')`
+      )
+      .run(guildId, name, type || 'general', price, description || null, deliveryContent || null);
+    return this.getById(info.lastInsertRowid);
+  },
+
+  listActive(guildId) {
+    return db
+      .prepare(`SELECT * FROM products WHERE guild_id = ? AND status = 'active' ORDER BY id ASC`)
+      .all(guildId);
+  },
+
+  getById(id) {
+    return db.prepare('SELECT * FROM products WHERE id = ?').get(id);
+  },
+
+  disable(id) {
+    db.prepare(`UPDATE products SET status = 'disabled' WHERE id = ?`).run(id);
+  },
+};
+
+===== src/repositories/ratingRepo.js =====
+const db = require('../database');
+
+module.exports = {
+  add(guildId, orderId, userId, stars, comment) {
+    const info = db
+      .prepare(
+        `INSERT INTO ratings(guild_id, order_id, user_id, stars, comment)
+         VALUES (?,?,?,?,?)`
+      )
+      .run(guildId, orderId, userId, stars, comment || null);
+    return this.getById(info.lastInsertRowid);
+  },
+
+  getById(id) {
+    return db.prepare('SELECT * FROM ratings WHERE id = ?').get(id);
+  },
+
+  existsByOrder(orderId) {
+    return db.prepare('SELECT 1 FROM ratings WHERE order_id = ?').get(orderId);
+  },
+
+  listByGuild(guildId, limit = 50) {
+    return db
+      .prepare('SELECT * FROM ratings WHERE guild_id = ? ORDER BY created_at DESC LIMIT ?')
+      .all(guildId, limit);
+  },
+};
+
+===== src/repositories/settingsRepo.js =====
+const db = require('../database');
+
+module.exports = {
+  get(guildId) {
+    return db.prepare('SELECT * FROM settings WHERE guild_id = ?').get(guildId);
+  },
+
+  ensure(guildId) {
+    db.prepare('INSERT OR IGNORE INTO settings(guild_id) VALUES (?)').run(guildId);
+    return this.get(guildId);
+  },
+
+  setWelcome(guildId, channelId, message = null, roleId = null) {
+    this.ensure(guildId);
+    db.prepare(
+      `UPDATE settings SET welcome_enabled = 1, welcome_channel = ?, welcome_message = ?, welcome_role = ? WHERE guild_id = ?`
+    ).run(channelId, message, roleId, guildId);
+  },
+
+  setWelcomeMessage(guildId, message) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET welcome_message = ? WHERE guild_id = ?`).run(message, guildId);
+  },
+
+  setWelcomeRole(guildId, roleId) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET welcome_role = ? WHERE guild_id = ?`).run(roleId, guildId);
+  },
+
+  setWelcomeEmbed(guildId, { enabled, title, color, bannerUrl, thumbnailUrl }) {
+    this.ensure(guildId);
+    db.prepare(
+      `UPDATE settings SET welcome_embed_enabled = ?, welcome_embed_title = ?, welcome_embed_color = ?, welcome_banner_url = ?, welcome_thumbnail_url = ? WHERE guild_id = ?`
+    ).run(enabled ? 1 : 0, title || null, color || null, bannerUrl || null, thumbnailUrl || null, guildId);
+  },
+
+  setVerify(guildId, channelId, roleId) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET verify_enabled = 1, verify_channel = ?, verify_role = ? WHERE guild_id = ?`)
+      .run(channelId, roleId, guildId);
+  },
+
+  setVerifyEmbed(guildId, { title, description, color, imageUrl }) {
+    this.ensure(guildId);
+    db.prepare(
+      `UPDATE settings SET verify_embed_title = ?, verify_embed_description = ?, verify_embed_color = ?, verify_image_url = ? WHERE guild_id = ?`
+    ).run(title || null, description || null, color || null, imageUrl || null, guildId);
+  },
+
+  setVerifyMessageId(guildId, messageId) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET verify_message_id = ? WHERE guild_id = ?`).run(messageId, guildId);
+  },
+
+  setBumpReminder(guildId, { enabled, channelId }) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET bump_reminder_enabled = ?, bump_reminder_channel = ? WHERE guild_id = ?`).run(
+      enabled ? 1 : 0,
+      channelId || null,
+      guildId
+    );
+  },
+
+  setUnverifiedRole(guildId, roleId) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET unverified_role = ? WHERE guild_id = ?`).run(roleId || null, guildId);
+  },
+
+  setRatingChannel(guildId, channelId) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET rating_channel = ? WHERE guild_id = ?`).run(channelId || null, guildId);
+  },
+
+  setTestimonialBanner(guildId, url) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET testimonial_banner_url = ? WHERE guild_id = ?`).run(url || null, guildId);
+  },
+
+  setEmptyCatalogMessage(guildId, message) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET empty_catalog_message = ? WHERE guild_id = ?`).run(message || null, guildId);
+  },
+
+  setBuyerRole(guildId, roleId) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET buyer_role = ? WHERE guild_id = ?`).run(roleId, guildId);
+  },
+
+  setAdminRole(guildId, roleId) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET admin_role = ? WHERE guild_id = ?`).run(roleId, guildId);
+  },
+
+  setLogChannel(guildId, channelId) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET log_channel = ? WHERE guild_id = ?`).run(channelId, guildId);
+  },
+
+  setQrisImage(guildId, url) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET qris_image_url = ? WHERE guild_id = ?`).run(url, guildId);
+  },
+};
+
+===== src/repositories/ticketRepo.js =====
+const db = require('../database');
+
+module.exports = {
+  create(guildId, userId, channelId, type) {
+    const info = db
+      .prepare(
+        `INSERT INTO tickets(guild_id, user_id, channel_id, type, status)
+         VALUES (?,?,?,?,'open')`
+      )
+      .run(guildId, userId, channelId, type);
+    return this.getById(info.lastInsertRowid);
+  },
+
+  getById(id) {
+    return db.prepare('SELECT * FROM tickets WHERE id = ?').get(id);
+  },
+
+  getByChannel(channelId) {
+    return db.prepare('SELECT * FROM tickets WHERE channel_id = ?').get(channelId);
+  },
+
+  close(channelId) {
+    db.prepare(`UPDATE tickets SET status = 'closed', closed_at = CURRENT_TIMESTAMP WHERE channel_id = ?`).run(
+      channelId
+    );
+  },
+};
+
+===== src/repositories/transcriptRepo.js =====
+const db = require('../database');
+
+module.exports = {
+  save(guildId, channelId, channelName, ticketType, userId, content, filePath) {
+    const info = db
+      .prepare(
+        `INSERT INTO transcripts(guild_id, channel_id, channel_name, ticket_type, user_id, content, file_path, exported_at)
+         VALUES (?,?,?,?,?,?,?,CURRENT_TIMESTAMP)`
+      )
+      .run(guildId, channelId, channelName, ticketType, userId, content, filePath);
+    return this.getById(info.lastInsertRowid);
+  },
+
+  getById(id) {
+    return db.prepare('SELECT * FROM transcripts WHERE id = ?').get(id);
+  },
+
+  listByGuild(guildId, limit = 50) {
+    return db
+      .prepare('SELECT * FROM transcripts WHERE guild_id = ? ORDER BY id DESC LIMIT ?')
+      .all(guildId, limit);
+  },
+
+  listByChannel(channelId) {
+    return db.prepare('SELECT * FROM transcripts WHERE channel_id = ? ORDER BY id DESC LIMIT 1').all(channelId);
+  },
+};
+
+===== src/repositories/vipFileRepo.js =====
+const db = require('../database');
+
+module.exports = {
+  get(guildId) {
+    return db.prepare('SELECT * FROM vip_files WHERE guild_id = ?').get(guildId);
+  },
+
+  set(guildId, filePath, originalName, uploadedBy) {
+    db.prepare(
+      `INSERT INTO vip_files(guild_id, file_path, original_name, uploaded_by, updated_at)
+       VALUES (?,?,?,?,CURRENT_TIMESTAMP)
+       ON CONFLICT(guild_id) DO UPDATE SET
+         file_path = excluded.file_path,
+         original_name = excluded.original_name,
+         uploaded_by = excluded.uploaded_by,
+         updated_at = CURRENT_TIMESTAMP`
+    ).run(guildId, filePath, originalName, uploadedBy);
+    return this.get(guildId);
+  },
+};
+
+===== src/repositories/webPanelOrderRepo.js =====
+const db = require('../database');
+
+module.exports = {
+  create(orderId, guildId, userId) {
+    const info = db
+      .prepare(`INSERT INTO web_panel_orders(order_id, guild_id, user_id, status) VALUES (?,?,?,'awaiting_form')`)
+      .run(orderId, guildId, userId);
+    return this.getById(info.lastInsertRowid);
+  },
+
+  getById(id) {
+    return db.prepare('SELECT * FROM web_panel_orders WHERE id = ?').get(id);
+  },
+
+  getByOrderId(orderId) {
+    return db.prepare('SELECT * FROM web_panel_orders WHERE order_id = ? ORDER BY id DESC LIMIT 1').get(orderId);
+  },
+
+  saveStep1(id, { websiteName, brandName, domain, description }) {
+    db.prepare(
+      `UPDATE web_panel_orders SET website_name = ?, brand_name = ?, domain = ?, description = ?, status = 'step1_done' WHERE id = ?`
+    ).run(websiteName, brandName, domain, description, id);
+  },
+
+  saveStep2(id, { extraFeatures, notes }) {
+    db.prepare(
+      `UPDATE web_panel_orders SET extra_features = ?, notes = ?, status = 'submitted', submitted_at = CURRENT_TIMESTAMP WHERE id = ?`
+    ).run(extraFeatures || null, notes || null, id);
+  },
+};
+
+===== src/repositories/youtubeChannelRepo.js =====
+const db = require('../database');
+
+module.exports = {
+  add(guildId, discordChannelId, youtubeChannelId, youtubeChannelName) {
+    const info = db
+      .prepare(
+        `INSERT INTO youtube_channels(guild_id, channel_id, youtube_channel_id, youtube_channel_name, last_check)
+         VALUES (?,?,?,?,CURRENT_TIMESTAMP)`
+      )
+      .run(guildId, discordChannelId, youtubeChannelId, youtubeChannelName);
+    return this.getById(info.lastInsertRowid);
+  },
+
+  getById(id) {
+    return db.prepare('SELECT * FROM youtube_channels WHERE id = ?').get(id);
+  },
+
+  listByGuild(guildId) {
+    return db.prepare('SELECT * FROM youtube_channels WHERE guild_id = ? ORDER BY id ASC').all(guildId);
+  },
+
+  remove(id) {
+    db.prepare('DELETE FROM youtube_channels WHERE id = ?').run(id);
+  },
+
+  updateLastCheck(id) {
+    db.prepare('UPDATE youtube_channels SET last_check = CURRENT_TIMESTAMP WHERE id = ?').run(id);
+  },
+};
+
+===== src/repositories/youtubeVideoRepo.js =====
+const db = require('../database');
+
+module.exports = {
+  add(guildId, youtubeVideoId, title, url, publishedAt) {
+    // SQLite can only bind numbers, strings, bigints, buffers, and null - not Date objects.
+    const publishedAtStr = publishedAt instanceof Date ? publishedAt.toISOString() : publishedAt;
+    db.prepare(
+      `INSERT INTO youtube_videos(guild_id, youtube_video_id, title, url, published_at, notified_at)
+       VALUES (?,?,?,?,?,CURRENT_TIMESTAMP)`
+    ).run(guildId, youtubeVideoId, title, url, publishedAtStr);
+  },
+
+  exists(guildId, youtubeVideoId) {
+    return db
+      .prepare('SELECT 1 FROM youtube_videos WHERE guild_id = ? AND youtube_video_id = ?')
+      .get(guildId, youtubeVideoId);
+  },
+
+  listByGuild(guildId, limit = 50) {
+    return db
+      .prepare('SELECT * FROM youtube_videos WHERE guild_id = ? ORDER BY notified_at DESC LIMIT ?')
+      .all(guildId, limit);
+  },
+};
+
