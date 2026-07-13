@@ -74,6 +74,9 @@ ensureColumn('settings', 'rating_channel', 'TEXT');
 ensureColumn('settings', 'testimonial_banner_url', 'TEXT');
 ensureColumn('settings', 'empty_catalog_message', 'TEXT');
 ensureColumn('orders', 'quantity', 'INTEGER DEFAULT 1');
+ensureColumn('settings', 'admin_role', 'TEXT');
+ensureColumn('settings', 'log_channel', 'TEXT');
+ensureColumn('settings', 'qris_image_url', 'TEXT');
 
 // Ratings table
 db.prepare(`CREATE TABLE IF NOT EXISTS ratings (
