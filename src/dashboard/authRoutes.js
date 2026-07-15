@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const oauth = require('./discordOAuth');
 const session = require('./session');
+const { isDeveloper } = require('../utils/developer');
 
 /**
  * Factory: needs the live Discord client to cross-check which guilds the
@@ -65,6 +66,7 @@ module.exports = function createAuthRouter(client) {
         discordUser: { id: discordUser.id, username: discordUser.username, avatar: discordUser.avatar },
         accessToken: tokenData.access_token,
         guilds,
+        isDeveloper: isDeveloper(discordUser.id),
       });
 
       session.setSessionCookie(res, sessionId, req.protocol === 'https');
@@ -77,7 +79,7 @@ module.exports = function createAuthRouter(client) {
 
   router.get('/me', (req, res) => {
     if (!req.session) return res.status(401).json({ error: 'Not authenticated' });
-    res.json({ user: req.session.discordUser, guilds: req.session.guilds });
+    res.json({ user: req.session.discordUser, guilds: req.session.guilds, isDeveloper: !!req.session.isDeveloper });
   });
 
   router.post('/logout', (req, res) => {

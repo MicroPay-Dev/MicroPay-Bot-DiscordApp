@@ -13,6 +13,7 @@ const youtubeVideoRepo = require('../repositories/youtubeVideoRepo');
 const AnalyticsService = require('../services/AnalyticsService');
 const BackupService = require('../services/BackupService');
 const ProductService = require('../services/ProductService');
+const { isDeveloper } = require('../utils/developer');
 
 const router = express.Router();
 
@@ -29,6 +30,17 @@ function setClient(client) {
 function authMiddleware(req, res, next) {
   if (!req.session) {
     return res.status(401).json({ error: 'Belum login. Silakan login lewat Discord.' });
+  }
+  next();
+}
+
+// Gate for developer-only routes. Full database backups span EVERY guild's
+// data (orders, payments, and even plaintext Discord credentials stored for
+// joki quest orders) — never safe to expose to arbitrary public dashboard
+// users once the bot is installed on other people's servers.
+function requireDeveloper(req, res, next) {
+  if (!isDeveloper(req.session?.discordUser?.id)) {
+    return res.status(403).json({ error: 'Fitur ini khusus untuk developer bot.' });
   }
   next();
 }
@@ -523,12 +535,12 @@ router.get('/guilds/:guildId/analytics/recent-sales', (req, res) => {
 // NOTE: backups cover the entire shared database file (all guilds), so
 // these routes are intentionally not guild-scoped.
 
-router.get('/backups', (req, res) => {
+router.get('/backups', requireDeveloper, (req, res) => {
   const backups = BackupService.listBackups();
   res.json(backups);
 });
 
-router.post('/backups', async (req, res) => {
+router.post('/backups', requireDeveloper, async (req, res) => {
   try {
     const backup = await BackupService.createBackup(req.body?.triggeredBy || 'dashboard');
     BackupService.pruneOldBackups();
@@ -538,7 +550,7 @@ router.post('/backups', async (req, res) => {
   }
 });
 
-router.get('/backups/:filename/download', (req, res) => {
+router.get('/backups/:filename/download', requireDeveloper, (req, res) => {
   const filePath = BackupService.getBackupPath(req.params.filename);
   if (!filePath) {
     return res.status(404).json({ error: 'Backup not found' });
