@@ -45,8 +45,37 @@ function requireDeveloper(req, res, next) {
   next();
 }
 
+// Image/banner URL fields across every feature (welcome embed, verify embed,
+// QRIS, testimonials, catalog, broadcast, quest update, etc). Only the
+// developer may set these — public server admins get everything else, but
+// custom image links are developer-only. Silently stripped (not rejected)
+// so the rest of a form submission still saves normally.
+const DEVELOPER_ONLY_FIELDS = [
+  'welcome_banner_url',
+  'welcome_thumbnail_url',
+  'verify_image_url',
+  'qris_image_url',
+  'testimonial_banner_url',
+  'banner_url',
+  'embed_image_url',
+  'attachment_url',
+  'image_url',
+];
+
+function stripDeveloperOnlyFields(req, res, next) {
+  if (!isDeveloper(req.session?.discordUser?.id) && req.body) {
+    for (const field of DEVELOPER_ONLY_FIELDS) {
+      if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+        delete req.body[field];
+      }
+    }
+  }
+  next();
+}
+
 router.use(authMiddleware);
 router.use(express.json());
+router.use(stripDeveloperOnlyFields);
 
 // Runs for every route with a :guildId param — confirms the logged-in user
 // actually has Manage Server (or Administrator) permission in that guild,
