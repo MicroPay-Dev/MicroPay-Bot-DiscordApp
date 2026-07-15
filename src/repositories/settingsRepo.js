@@ -127,4 +127,13 @@ module.exports = {
       guildId
     );
   },
+
+  setTicketCategories(guildId, { orderCategory, supportCategory }) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET order_category = ?, support_category = ? WHERE guild_id = ?`).run(
+      orderCategory || null,
+      supportCategory || null,
+      guildId
+    );
+  },
 };

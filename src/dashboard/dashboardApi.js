@@ -1,6 +1,6 @@
 const express = require('express');
 const fs = require('fs');
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType } = require('discord.js');
 const settingsRepo = require('../repositories/settingsRepo');
 const { postVerifyPanel } = require('../bot/utils/verifyPanel');
 const productRepo = require('../repositories/productRepo');
@@ -107,7 +107,12 @@ router.get('/guilds/:guildId/meta', (req, res) => {
     .map((r) => ({ id: r.id, name: r.name, color: r.hexColor }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  res.json({ guildName: guild.name, guildIcon: guild.iconURL(), channels, roles });
+  const categories = guild.channels.cache
+    .filter((c) => c.type === ChannelType.GuildCategory)
+    .map((c) => ({ id: c.id, name: c.name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  res.json({ guildName: guild.name, guildIcon: guild.iconURL(), channels, roles, categories });
 });
 
 // --- PRODUCT CATALOG (post all active products as embed to a channel) ---
@@ -284,9 +289,18 @@ router.put('/guilds/:guildId/settings', (req, res) => {
     quest_feed_quest_channel,
     quest_feed_collectible_enabled,
     quest_feed_collectible_channel,
+    order_category,
+    support_category,
   } = req.body;
 
   settingsRepo.ensure(guildId);
+  if (order_category !== undefined || support_category !== undefined) {
+    const current = settingsRepo.get(guildId);
+    settingsRepo.setTicketCategories(guildId, {
+      orderCategory: order_category !== undefined ? order_category : current.order_category,
+      supportCategory: support_category !== undefined ? support_category : current.support_category,
+    });
+  }
   if (quest_feed_quest_enabled !== undefined || quest_feed_quest_channel !== undefined) {
     const current = settingsRepo.get(guildId);
     settingsRepo.setQuestFeedQuest(guildId, {

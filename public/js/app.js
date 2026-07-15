@@ -627,6 +627,11 @@ async function renderSettings() {
   const roleOptions = (selected) =>
     `<option value="">— Pilih role —</option>` +
     roles.map((r) => `<option value="${r.id}" ${r.id === selected ? 'selected' : ''}>${escapeHtml(r.name)}</option>`).join('');
+  const categoryOptions = (selected) =>
+    `<option value="">— Tanpa kategori —</option>` +
+    (state.meta?.categories || [])
+      .map((c) => `<option value="${c.id}" ${c.id === selected ? 'selected' : ''}>${escapeHtml(c.name)}</option>`)
+      .join('');
 
   content.innerHTML = `
     <h1 class="page-title">Settings</h1>
@@ -717,6 +722,18 @@ async function renderSettings() {
           </label>
           <label>Channel Reminder</label>
           <select name="bump_reminder_channel">${channelOptions(settings.bump_reminder_channel)}</select>
+        </div>
+
+        <div class="hud-panel">
+          <span class="corner-bl"></span><span class="corner-br"></span>
+          <div class="panel-title">🎫 Kategori Ticket</div>
+          <label>Kategori untuk Order Ticket</label>
+          <select name="order_category">${categoryOptions(settings.order_category)}</select>
+          <label>Kategori untuk Support Ticket</label>
+          <select name="support_category">${categoryOptions(settings.support_category)}</select>
+          <div style="margin-top:0.6rem; font-size:0.78rem; color:var(--text-dim);">
+            Buat 2 kategori channel berbeda di server Discord kamu (misal "🛒 ORDER" dan "🎫 SUPPORT"), lalu pilih di sini. Ticket order dan ticket support akan otomatis dibuat di kategori masing-masing.
+          </div>
         </div>
       </div>
 
