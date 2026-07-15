@@ -79,6 +79,10 @@ ensureColumn('settings', 'log_channel', 'TEXT');
 ensureColumn('settings', 'qris_image_url', 'TEXT');
 ensureColumn('settings', 'quest_feed_enabled', 'INTEGER DEFAULT 0');
 ensureColumn('settings', 'quest_feed_channel', 'TEXT');
+ensureColumn('settings', 'quest_feed_quest_enabled', 'INTEGER DEFAULT 0');
+ensureColumn('settings', 'quest_feed_quest_channel', 'TEXT');
+ensureColumn('settings', 'quest_feed_collectible_enabled', 'INTEGER DEFAULT 0');
+ensureColumn('settings', 'quest_feed_collectible_channel', 'TEXT');
 
 // Ratings table
 db.prepare(`CREATE TABLE IF NOT EXISTS ratings (

@@ -109,4 +109,22 @@ module.exports = {
       guildId
     );
   },
+
+  setQuestFeedQuest(guildId, { enabled, channelId }) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET quest_feed_quest_enabled = ?, quest_feed_quest_channel = ? WHERE guild_id = ?`).run(
+      enabled ? 1 : 0,
+      channelId || null,
+      guildId
+    );
+  },
+
+  setQuestFeedCollectible(guildId, { enabled, channelId }) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET quest_feed_collectible_enabled = ?, quest_feed_collectible_channel = ? WHERE guild_id = ?`).run(
+      enabled ? 1 : 0,
+      channelId || null,
+      guildId
+    );
+  },
 };

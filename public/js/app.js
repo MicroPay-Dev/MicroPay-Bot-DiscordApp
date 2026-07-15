@@ -478,14 +478,25 @@ async function renderQuestUpdate() {
       <div class="panel-title">🤖 Auto Quest Feed (api.discordquest.com)</div>
       <form id="quest-feed-form">
         <label style="display:flex; align-items:center; gap:0.5rem;">
-          <input type="checkbox" name="quest_feed_enabled" style="width:auto;" ${settings.quest_feed_enabled ? 'checked' : ''}>
-          Aktifkan auto-post quest & collectible baru (cek tiap 1 jam)
+          <input type="checkbox" name="quest_feed_quest_enabled" style="width:auto;" ${settings.quest_feed_quest_enabled ? 'checked' : ''}>
+          Aktifkan auto-post <strong>Quest</strong> baru (cek tiap 1 jam)
         </label>
-        <label>Channel Tujuan</label>
-        <select name="quest_feed_channel">
+        <label>Channel Tujuan (Quest)</label>
+        <select name="quest_feed_quest_channel">
           <option value="">-- Pilih Channel --</option>
-          ${channels.map((c) => `<option value="${c.id}" ${c.id === settings.quest_feed_channel ? 'selected' : ''}>#${escapeHtml(c.name)}</option>`).join('')}
+          ${channels.map((c) => `<option value="${c.id}" ${c.id === settings.quest_feed_quest_channel ? 'selected' : ''}>#${escapeHtml(c.name)}</option>`).join('')}
         </select>
+
+        <label style="display:flex; align-items:center; gap:0.5rem; margin-top:1.2rem;">
+          <input type="checkbox" name="quest_feed_collectible_enabled" style="width:auto;" ${settings.quest_feed_collectible_enabled ? 'checked' : ''}>
+          Aktifkan auto-post <strong>Collectible</strong> baru (cek tiap 1 jam)
+        </label>
+        <label>Channel Tujuan (Collectible)</label>
+        <select name="quest_feed_collectible_channel">
+          <option value="">-- Pilih Channel --</option>
+          ${channels.map((c) => `<option value="${c.id}" ${c.id === settings.quest_feed_collectible_channel ? 'selected' : ''}>#${escapeHtml(c.name)}</option>`).join('')}
+        </select>
+
         <div style="margin-top:1.2rem;"><button class="btn" type="submit">💾 Simpan Auto Feed</button></div>
       </form>
     </div>
@@ -525,8 +536,10 @@ async function renderQuestUpdate() {
     const fd = new FormData(e.target);
     try {
       await Api.put(`/api/dashboard/guilds/${state.guildId}/settings`, {
-        quest_feed_enabled: e.target.querySelector('[name="quest_feed_enabled"]').checked,
-        quest_feed_channel: fd.get('quest_feed_channel') || null,
+        quest_feed_quest_enabled: e.target.querySelector('[name="quest_feed_quest_enabled"]').checked,
+        quest_feed_quest_channel: fd.get('quest_feed_quest_channel') || null,
+        quest_feed_collectible_enabled: e.target.querySelector('[name="quest_feed_collectible_enabled"]').checked,
+        quest_feed_collectible_channel: fd.get('quest_feed_collectible_channel') || null,
       });
       toast('Pengaturan Auto Quest Feed disimpan');
     } catch (err) {

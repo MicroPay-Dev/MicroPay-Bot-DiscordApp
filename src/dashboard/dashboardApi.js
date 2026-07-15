@@ -238,16 +238,25 @@ router.put('/guilds/:guildId/settings', (req, res) => {
     rating_channel,
     testimonial_banner_url,
     empty_catalog_message,
-    quest_feed_enabled,
-    quest_feed_channel,
+    quest_feed_quest_enabled,
+    quest_feed_quest_channel,
+    quest_feed_collectible_enabled,
+    quest_feed_collectible_channel,
   } = req.body;
 
   settingsRepo.ensure(guildId);
-  if (quest_feed_enabled !== undefined || quest_feed_channel !== undefined) {
+  if (quest_feed_quest_enabled !== undefined || quest_feed_quest_channel !== undefined) {
     const current = settingsRepo.get(guildId);
-    settingsRepo.setQuestFeed(guildId, {
-      enabled: quest_feed_enabled !== undefined ? !!quest_feed_enabled : !!current.quest_feed_enabled,
-      channelId: quest_feed_channel !== undefined ? quest_feed_channel : current.quest_feed_channel,
+    settingsRepo.setQuestFeedQuest(guildId, {
+      enabled: quest_feed_quest_enabled !== undefined ? !!quest_feed_quest_enabled : !!current.quest_feed_quest_enabled,
+      channelId: quest_feed_quest_channel !== undefined ? quest_feed_quest_channel : current.quest_feed_quest_channel,
+    });
+  }
+  if (quest_feed_collectible_enabled !== undefined || quest_feed_collectible_channel !== undefined) {
+    const current = settingsRepo.get(guildId);
+    settingsRepo.setQuestFeedCollectible(guildId, {
+      enabled: quest_feed_collectible_enabled !== undefined ? !!quest_feed_collectible_enabled : !!current.quest_feed_collectible_enabled,
+      channelId: quest_feed_collectible_channel !== undefined ? quest_feed_collectible_channel : current.quest_feed_collectible_channel,
     });
   }
   if (welcome_message !== undefined) settingsRepo.setWelcomeMessage(guildId, welcome_message);

@@ -68,9 +68,8 @@ function seedIfEmpty(itemType, items, idFn) {
   return items.length > 0;
 }
 
-async function checkAndAnnounce(client) {
-  const newEmbeds = [];
-
+async function collectNewQuestEmbeds() {
+  const embeds = [];
   try {
     const quests = await fetchJson(QUESTS_URL);
     const seeded = seedIfEmpty('quest', quests, (q) => q.id);
@@ -79,13 +78,17 @@ async function checkAndAnnounce(client) {
         const id = quest.id;
         if (!id || questFeedRepo.isSeen('quest', id)) continue;
         questFeedRepo.markSeen('quest', id);
-        newEmbeds.push(buildQuestEmbed(quest));
+        embeds.push(buildQuestEmbed(quest));
       }
     }
   } catch (err) {
     console.error('❌ QuestFeedService: gagal fetch quests -', err.message);
   }
+  return embeds;
+}
 
+async function collectNewCollectibleEmbeds() {
+  const embeds = [];
   try {
     const collectibles = await fetchJson(COLLECTIBLES_URL);
     const seeded = seedIfEmpty('collectible', collectibles, (c) => c.sku_id || c.store_listing_id);
@@ -94,34 +97,62 @@ async function checkAndAnnounce(client) {
         const id = item.sku_id || item.store_listing_id;
         if (!id || questFeedRepo.isSeen('collectible', id)) continue;
         questFeedRepo.markSeen('collectible', id);
-        newEmbeds.push(buildCollectibleEmbed(item));
+        embeds.push(buildCollectibleEmbed(item));
       }
     }
   } catch (err) {
     console.error('❌ QuestFeedService: gagal fetch collectibles -', err.message);
   }
+  return embeds;
+}
 
-  if (!newEmbeds.length) return;
+async function sendToGuilds(client, embeds, isEnabled, getChannelId) {
+  if (!embeds.length) return;
 
   for (const guild of client.guilds.cache.values()) {
     const settings = settingsRepo.get(guild.id);
-    if (!settings || !settings.quest_feed_enabled || !settings.quest_feed_channel) continue;
+    if (!settings || !isEnabled(settings)) continue;
 
-    const channel = guild.channels.cache.get(settings.quest_feed_channel);
+    const channelId = getChannelId(settings);
+    if (!channelId) continue;
+
+    const channel = guild.channels.cache.get(channelId);
     if (!channel || !channel.isTextBased()) continue;
 
     // Discord allows a max of 10 embeds per message.
-    for (let i = 0; i < newEmbeds.length; i += 10) {
-      await channel.send({ embeds: newEmbeds.slice(i, i + 10) }).catch(() => {});
+    for (let i = 0; i < embeds.length; i += 10) {
+      await channel.send({ embeds: embeds.slice(i, i + 10) }).catch(() => {});
     }
   }
+}
+
+async function checkAndAnnounce(client) {
+  const questEmbeds = await collectNewQuestEmbeds();
+  const collectibleEmbeds = await collectNewCollectibleEmbeds();
+
+  // Quest and Collectible feeds are independently toggled per guild, and can
+  // each point to a different channel.
+  await sendToGuilds(
+    client,
+    questEmbeds,
+    (s) => !!s.quest_feed_quest_enabled,
+    (s) => s.quest_feed_quest_channel
+  );
+
+  await sendToGuilds(
+    client,
+    collectibleEmbeds,
+    (s) => !!s.quest_feed_collectible_enabled,
+    (s) => s.quest_feed_collectible_channel
+  );
 }
 
 module.exports = {
   /**
    * Polls api.discordquest.com every hour for new quests/collectibles and
-   * auto-announces newly-discovered items to each guild's configured quest
-   * feed channel (settings.quest_feed_enabled + quest_feed_channel).
+   * auto-announces newly-discovered items. Quest announcements and
+   * Collectible announcements are controlled and routed independently per
+   * guild (settings.quest_feed_quest_* vs settings.quest_feed_collectible_*).
    */
   startPolling(client) {
     const run = () => checkAndAnnounce(client).catch((err) => console.error('❌ QuestFeedService error:', err));
