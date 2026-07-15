@@ -1,6 +1,7 @@
 const YouTubeService = require('../../services/YouTubeService');
 const BackupService = require('../../services/BackupService');
 const BumpReminderService = require('../../services/BumpReminderService');
+const QuestFeedService = require('../../services/QuestFeedService');
 
 module.exports = {
   name: 'clientReady',
@@ -16,5 +17,8 @@ module.exports = {
 
     // Start /bump reminder scheduler (every 2 hours, if enabled per-guild)
     BumpReminderService.startReminder(client);
+
+    // Start Discord Quest auto-feed scheduler (every 1 hour, if enabled per-guild)
+    QuestFeedService.startPolling(client);
   },
 };

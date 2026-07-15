@@ -100,4 +100,13 @@ module.exports = {
     this.ensure(guildId);
     db.prepare(`UPDATE settings SET qris_image_url = ? WHERE guild_id = ?`).run(url, guildId);
   },
+
+  setQuestFeed(guildId, { enabled, channelId }) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET quest_feed_enabled = ?, quest_feed_channel = ? WHERE guild_id = ?`).run(
+      enabled ? 1 : 0,
+      channelId || null,
+      guildId
+    );
+  },
 };

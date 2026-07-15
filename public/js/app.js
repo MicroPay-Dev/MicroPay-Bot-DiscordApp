@@ -467,6 +467,7 @@ async function renderBroadcast() {
 
 async function renderQuestUpdate() {
   const channels = state.meta?.channels || [];
+  const settings = await Api.get(`/api/dashboard/guilds/${state.guildId}/settings`);
 
   content.innerHTML = `
     <h1 class="page-title">Quest Update</h1>
@@ -474,7 +475,24 @@ async function renderQuestUpdate() {
 
     <div class="hud-panel">
       <span class="corner-bl"></span><span class="corner-br"></span>
-      <div class="panel-title">Detail Quest</div>
+      <div class="panel-title">🤖 Auto Quest Feed (api.discordquest.com)</div>
+      <form id="quest-feed-form">
+        <label style="display:flex; align-items:center; gap:0.5rem;">
+          <input type="checkbox" name="quest_feed_enabled" style="width:auto;" ${settings.quest_feed_enabled ? 'checked' : ''}>
+          Aktifkan auto-post quest & collectible baru (cek tiap 1 jam)
+        </label>
+        <label>Channel Tujuan</label>
+        <select name="quest_feed_channel">
+          <option value="">-- Pilih Channel --</option>
+          ${channels.map((c) => `<option value="${c.id}" ${c.id === settings.quest_feed_channel ? 'selected' : ''}>#${escapeHtml(c.name)}</option>`).join('')}
+        </select>
+        <div style="margin-top:1.2rem;"><button class="btn" type="submit">💾 Simpan Auto Feed</button></div>
+      </form>
+    </div>
+
+    <div class="hud-panel">
+      <span class="corner-bl"></span><span class="corner-br"></span>
+      <div class="panel-title">Detail Quest (Manual)</div>
       <form id="quest-form">
         <label>Channel Tujuan</label>
         <select name="channel_id" required>
@@ -501,6 +519,20 @@ async function renderQuestUpdate() {
       </form>
     </div>
   `;
+
+  document.getElementById('quest-feed-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    try {
+      await Api.put(`/api/dashboard/guilds/${state.guildId}/settings`, {
+        quest_feed_enabled: e.target.querySelector('[name="quest_feed_enabled"]').checked,
+        quest_feed_channel: fd.get('quest_feed_channel') || null,
+      });
+      toast('Pengaturan Auto Quest Feed disimpan');
+    } catch (err) {
+      toast('Gagal: ' + err.message, true);
+    }
+  });
 
   document.getElementById('quest-form').addEventListener('submit', async (e) => {
     e.preventDefault();

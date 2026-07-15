@@ -238,9 +238,18 @@ router.put('/guilds/:guildId/settings', (req, res) => {
     rating_channel,
     testimonial_banner_url,
     empty_catalog_message,
+    quest_feed_enabled,
+    quest_feed_channel,
   } = req.body;
 
   settingsRepo.ensure(guildId);
+  if (quest_feed_enabled !== undefined || quest_feed_channel !== undefined) {
+    const current = settingsRepo.get(guildId);
+    settingsRepo.setQuestFeed(guildId, {
+      enabled: quest_feed_enabled !== undefined ? !!quest_feed_enabled : !!current.quest_feed_enabled,
+      channelId: quest_feed_channel !== undefined ? quest_feed_channel : current.quest_feed_channel,
+    });
+  }
   if (welcome_message !== undefined) settingsRepo.setWelcomeMessage(guildId, welcome_message);
   if (welcome_role !== undefined) settingsRepo.setWelcomeRole(guildId, welcome_role);
   if (welcome_channel !== undefined || welcome_message !== undefined || welcome_role !== undefined) {

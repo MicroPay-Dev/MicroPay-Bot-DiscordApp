@@ -77,6 +77,8 @@ ensureColumn('orders', 'quantity', 'INTEGER DEFAULT 1');
 ensureColumn('settings', 'admin_role', 'TEXT');
 ensureColumn('settings', 'log_channel', 'TEXT');
 ensureColumn('settings', 'qris_image_url', 'TEXT');
+ensureColumn('settings', 'quest_feed_enabled', 'INTEGER DEFAULT 0');
+ensureColumn('settings', 'quest_feed_channel', 'TEXT');
 
 // Ratings table
 db.prepare(`CREATE TABLE IF NOT EXISTS ratings (
@@ -87,6 +89,15 @@ db.prepare(`CREATE TABLE IF NOT EXISTS ratings (
   stars INTEGER,
   comment TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)`).run();
+
+// Quest Feed: tracks which quests/collectibles from api.discordquest.com
+// have already been announced, so the poller never posts the same item twice.
+db.prepare(`CREATE TABLE IF NOT EXISTS quest_feed_seen (
+  item_type TEXT,
+  item_id TEXT,
+  first_seen_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (item_type, item_id)
 )`).run();
 ensureColumn('joki_quest_orders', 'discord_email', 'TEXT');
 ensureColumn('joki_quest_orders', 'password_discord', 'TEXT');
