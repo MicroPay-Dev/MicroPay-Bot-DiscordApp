@@ -2,6 +2,7 @@ require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const { createClient } = require('./src/bot/client');
+const { PermissionsBitField } = require('discord.js');
 const dashboardApi = require('./src/dashboard/dashboardApi');
 const { sessionMiddleware } = require('./src/dashboard/session');
 const createAuthRouter = require('./src/dashboard/authRoutes');
@@ -25,6 +26,36 @@ app.use('/auth', createAuthRouter(client));
 app.use('/api/dashboard', dashboardApi);
 
 dashboardApi.setClient(client);
+
+// Public bot invite link — builds the Discord OAuth2 authorize URL with the
+// permissions MICROSTORE BOT needs (tickets, roles, welcome/verify, etc).
+// Kept server-side so it's always correct even if CLIENT_ID changes.
+app.get('/invite', (req, res) => {
+  if (!process.env.CLIENT_ID) {
+    return res.status(500).send('CLIENT_ID belum diset di environment variables.');
+  }
+
+  const permissions = new PermissionsBitField([
+    'ViewChannel',
+    'SendMessages',
+    'EmbedLinks',
+    'AttachFiles',
+    'ReadMessageHistory',
+    'AddReactions',
+    'ManageMessages',
+    'ManageChannels',
+    'ManageRoles',
+    'UseExternalEmojis',
+  ]).bitfield.toString();
+
+  const params = new URLSearchParams({
+    client_id: process.env.CLIENT_ID,
+    permissions,
+    scope: 'bot applications.commands',
+  });
+
+  res.redirect(`https://discord.com/oauth2/authorize?${params.toString()}`);
+});
 
 const httpServer = app.listen(port, () => {
   console.log(`HTTP server listening on ${port}`);

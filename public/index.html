@@ -3,74 +3,79 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MICROSTORE_OS // Login</title>
+<title>MICROSTORE BOT // Discord Bot Serbaguna</title>
 <link rel="stylesheet" href="/css/theme.css">
 <style>
-  body { display: flex; align-items: center; justify-content: center; }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem 1rem; }
 
-  .login-shell { width: 100%; max-width: 420px; padding: 1.5rem; }
-
-  .login-shell .hud-panel { padding: 2.5rem 2rem; text-align: center; }
-
-  .login-shell .corner-bl, .login-shell .corner-br { display: block; }
+  .landing-shell { width: 100%; max-width: 640px; text-align: center; }
 
   .logo {
     font-family: var(--font-display);
-    font-size: 1.6rem;
+    font-size: 2.2rem;
     font-weight: 900;
     color: var(--text-bright);
     letter-spacing: 0.08em;
-    margin-bottom: 0.2rem;
+    margin-bottom: 0.5rem;
   }
   .logo span { color: var(--accent-cyan); }
 
   .tagline {
     font-family: var(--font-mono);
-    font-size: 0.78rem;
+    font-size: 0.85rem;
+    color: var(--accent-cyan);
+    margin-bottom: 2rem;
+    letter-spacing: 0.05em;
+  }
+
+  .description {
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    line-height: 1.75;
     color: var(--text-dim);
+    margin-bottom: 2.5rem;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
     margin-bottom: 2rem;
   }
 
-  .boot-line {
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    color: var(--accent-cyan);
-    text-align: left;
-    margin: 0 0 1.5rem 0;
-    line-height: 1.6;
-    border-left: 2px solid var(--border-line);
-    padding-left: 0.8rem;
-  }
-  .boot-line .ok { color: var(--success); }
-
-  .discord-btn {
+  .cta-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.6rem;
-    width: 100%;
-    padding: 0.85rem 1rem;
+    padding: 0.9rem 1.8rem;
     font-family: var(--font-ui);
     font-weight: 700;
     font-size: 0.95rem;
     letter-spacing: 0.03em;
     text-transform: uppercase;
-    background: var(--accent-cyan);
-    color: var(--bg-void);
-    border: none;
     border-radius: 2px;
     cursor: pointer;
+    text-decoration: none;
     transition: box-shadow 0.15s, transform 0.1s;
+    border: none;
   }
-  .discord-btn:hover { box-shadow: 0 0 24px var(--accent-cyan); }
-  .discord-btn:active { transform: scale(0.98); }
+  .cta-btn:active { transform: scale(0.98); }
 
-  .login-footnote {
-    margin-top: 1.5rem;
-    font-size: 0.75rem;
-    color: var(--text-dim);
+  .cta-primary { background: var(--accent-cyan); color: var(--bg-void); }
+  .cta-primary:hover { box-shadow: 0 0 24px var(--accent-cyan); }
+
+  .cta-secondary { background: transparent; color: var(--text-bright); border: 1px solid var(--border-line); }
+  .cta-secondary:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+
+  .footer-links {
     font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--text-dim);
   }
+  .footer-links a { color: var(--accent-cyan); text-decoration: none; }
+  .footer-links a:hover { text-decoration: underline; }
 
   #error-banner {
     display: none;
@@ -87,28 +92,23 @@
 </head>
 <body>
 
-  <div class="login-shell">
-    <div class="hud-panel">
-      <span class="corner-bl"></span><span class="corner-br"></span>
+  <div class="landing-shell">
+    <div id="error-banner"></div>
 
-      <div id="error-banner"></div>
+    <div class="logo">MICRO<span>STORE</span> BOT</div>
+    <div class="tagline">// Discord Bot Serbaguna untuk Server Anda</div>
 
-      <div class="logo">MICRO<span>STORE</span>_OS</div>
-      <div class="tagline">// Toko digital management terminal</div>
+    <p class="description">
+      MICROSTORE BOT adalah bot Discord serbaguna yang menghadirkan fitur Ticket, Verification, Welcome, Announcement, Automation, dan berbagai utilitas lainnya untuk membantu mengelola server dengan lebih mudah, cepat, dan profesional.
+    </p>
 
-      <div class="boot-line">
-        SYSTEM CHECK<span class="ok">.... OK</span><br>
-        BOT CONNECTION<span class="ok">.. OK</span><br>
-        AWAITING AUTH<span style="color:var(--accent-amber)">.... STANDBY</span>
-      </div>
+    <div class="btn-row">
+      <a class="cta-btn cta-primary" href="/invite">➕ Add Bot</a>
+      <a class="cta-btn cta-secondary" href="/auth/login">▸ Login</a>
+    </div>
 
-      <button class="discord-btn" onclick="window.location.href='/auth/login'">
-        ▸ Login dengan Discord
-      </button>
-
-      <div class="login-footnote">
-        Akses hanya untuk admin server yang sudah memasang bot MICROSTORE.
-      </div>
+    <div class="footer-links">
+      <a href="/support.html">Support</a> &middot; Butuh bantuan? Gabung server kami.
     </div>
   </div>
 
@@ -120,11 +120,6 @@
       banner.style.display = 'block';
       banner.textContent = 'LOGIN GAGAL: ' + err;
     }
-
-    // If already logged in, skip straight to dashboard.
-    fetch('/auth/me').then(r => {
-      if (r.ok) window.location.href = '/dashboard.html';
-    }).catch(() => {});
   </script>
 
 </body>
