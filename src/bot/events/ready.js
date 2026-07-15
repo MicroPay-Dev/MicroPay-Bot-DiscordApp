@@ -14,7 +14,16 @@ async function syncSlashCommands(client) {
   try {
     const commands = [...client.commands.values()].map((c) => c.data.toJSON());
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
-    await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands });
+
+    // If this application has an Activity (Embedded App) "Entry Point"
+    // command registered in the Developer Portal, Discord requires it to be
+    // included in every bulk overwrite of global commands, or the PUT is
+    // rejected outright. Fetch whatever's currently live and preserve it.
+    const existing = await rest.get(Routes.applicationCommands(process.env.CLIENT_ID));
+    const entryPoint = existing.find((c) => c.type === 4);
+    const body = entryPoint ? [...commands, entryPoint] : commands;
+
+    await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body });
     console.log(`✅ Slash commands synced (${commands.length} commands)`);
   } catch (err) {
     console.error('❌ Gagal sync slash commands:', err.message);
