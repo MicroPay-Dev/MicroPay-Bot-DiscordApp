@@ -14,6 +14,7 @@ const AnalyticsService = require('../services/AnalyticsService');
 const BackupService = require('../services/BackupService');
 const ProductService = require('../services/ProductService');
 const { isDeveloper } = require('../utils/developer');
+const { REST, Routes } = require('discord.js');
 
 const router = express.Router();
 
@@ -588,6 +589,46 @@ router.get('/backups/:filename/download', requireDeveloper, (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="${req.params.filename}"`);
   res.setHeader('Content-Type', 'application/octet-stream');
   fs.createReadStream(filePath).pipe(res);
+});
+
+// --- BOT PROFILE (developer-only, global — not guild-scoped) ---
+// Lets the developer change the bot's own Discord identity: username,
+// avatar, profile banner, and application "About Me" description.
+
+router.get('/bot-profile', requireDeveloper, async (req, res) => {
+  if (!discordClient?.user) return res.status(503).json({ error: 'Bot belum online.' });
+  try {
+    const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+    const app = await rest.get(Routes.currentApplication());
+    res.json({
+      username: discordClient.user.username,
+      avatar_url: discordClient.user.displayAvatarURL({ size: 256 }),
+      banner_url: discordClient.user.bannerURL({ size: 512 }) || null,
+      description: app.description || '',
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Gagal memuat profil bot: ' + err.message });
+  }
+});
+
+router.put('/bot-profile', requireDeveloper, async (req, res) => {
+  if (!discordClient?.user) return res.status(503).json({ error: 'Bot belum online.' });
+  const { username, avatar_url, banner_url, description } = req.body;
+
+  try {
+    if (username) await discordClient.user.setUsername(username);
+    if (avatar_url) await discordClient.user.setAvatar(avatar_url);
+    if (banner_url) await discordClient.user.setBanner(banner_url);
+    if (description !== undefined) {
+      const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+      await rest.patch(Routes.currentApplication(), { body: { description } });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    // Discord heavily rate-limits username changes (roughly 2x/hour) — surface
+    // the real Discord error message so the developer knows why it failed.
+    res.status(500).json({ error: 'Gagal update profil bot: ' + err.message });
+  }
 });
 
 module.exports = router;

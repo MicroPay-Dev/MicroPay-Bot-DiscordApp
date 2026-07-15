@@ -80,6 +80,9 @@ async function bootstrap() {
   }
 
   state.isDeveloper = !!me.isDeveloper;
+  if (!state.isDeveloper) {
+    document.querySelectorAll('[data-dev-only]').forEach((el) => el.remove());
+  }
 
   document.getElementById('user-name').textContent = me.user.username;
   document.getElementById('user-avatar').src = me.user.avatar
@@ -146,6 +149,7 @@ function renderView() {
     settings: renderSettings,
     logs: renderLogs,
     backups: renderBackups,
+    'bot-profile': renderBotProfile,
   };
   (renderers[state.view] || renderOverview)().catch((err) => {
     content.innerHTML = `<div class="empty-state text-danger">ERROR: ${escapeHtml(err.message)}</div>`;
@@ -845,3 +849,63 @@ async function renderBackups() {
 }
 
 bootstrap();
+
+
+// ---------- Bot Profile (developer-only) ----------
+
+async function renderBotProfile() {
+  if (!state.isDeveloper) {
+    content.innerHTML = `<div class="empty-state">Halaman ini khusus developer bot.</div>`;
+    return;
+  }
+
+  const profile = await Api.get(`/api/dashboard/bot-profile`);
+
+  content.innerHTML = `
+    <h1 class="page-title">Bot Profile</h1>
+    <div class="page-subtitle">// Identitas bot (username, avatar, banner, deskripsi) — berlaku global di semua server</div>
+
+    <div class="hud-panel">
+      <span class="corner-bl"></span><span class="corner-br"></span>
+      <div class="panel-title">🤖 Identitas Bot</div>
+      <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.2rem;">
+        <img src="${profile.avatar_url}" alt="avatar" style="width:64px; height:64px; border-radius:50%;">
+        <div>
+          <div style="font-weight:600;">${escapeHtml(profile.username)}</div>
+        </div>
+      </div>
+      <form id="bot-profile-form">
+        <label>Username Bot</label>
+        <input name="username" value="${escapeHtml(profile.username)}" placeholder="Nama bot (rate-limited oleh Discord, ~2x/jam)">
+
+        <label>URL Avatar Baru (opsional)</label>
+        <input name="avatar_url" placeholder="https://...">
+
+        <label>URL Banner Profil Baru (opsional)</label>
+        <input name="banner_url" placeholder="https://...">
+
+        <label>Deskripsi / Bio Bot (About Me)</label>
+        <textarea name="description" rows="4">${escapeHtml(profile.description || '')}</textarea>
+
+        <div style="margin-top:1.2rem;"><button class="btn" type="submit">💾 Simpan Perubahan</button></div>
+      </form>
+    </div>
+  `;
+
+  document.getElementById('bot-profile-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    try {
+      await Api.put(`/api/dashboard/bot-profile`, {
+        username: fd.get('username') || undefined,
+        avatar_url: fd.get('avatar_url') || undefined,
+        banner_url: fd.get('banner_url') || undefined,
+        description: fd.get('description'),
+      });
+      toast('Profil bot berhasil diperbarui');
+      renderBotProfile();
+    } catch (err) {
+      toast('Gagal: ' + err.message, true);
+    }
+  });
+}
