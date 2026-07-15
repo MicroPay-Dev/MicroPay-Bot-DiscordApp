@@ -8,6 +8,41 @@ const state = {
 
 const content = document.getElementById('content');
 
+// Developer-only image/banner URL fields. Mirrors DEVELOPER_ONLY_FIELDS in
+// src/dashboard/dashboardApi.js — this is UX only (the backend already
+// enforces this for real), so public users see a clear locked state
+// instead of typing a link that silently gets dropped on save.
+const DEVELOPER_ONLY_FIELD_NAMES = [
+  'welcome_banner_url',
+  'welcome_thumbnail_url',
+  'verify_image_url',
+  'qris_image_url',
+  'testimonial_banner_url',
+  'banner_url',
+  'embed_image_url',
+  'attachment_url',
+  'image_url',
+];
+
+function applyDeveloperFieldLock() {
+  if (state.isDeveloper) return;
+  DEVELOPER_ONLY_FIELD_NAMES.forEach((name) => {
+    content.querySelectorAll(`[name="${name}"]`).forEach((el) => {
+      if (el.dataset.devLocked) return;
+      el.dataset.devLocked = '1';
+      el.disabled = true;
+      el.placeholder = '🔒 Khusus Developer';
+      el.value = '';
+      el.style.opacity = '0.5';
+      el.style.cursor = 'not-allowed';
+    });
+  });
+}
+
+// Auto-runs every time a panel re-renders (all views replace content.innerHTML),
+// so this needs no changes whenever a new panel/field is added later.
+new MutationObserver(() => applyDeveloperFieldLock()).observe(content, { childList: true, subtree: true });
+
 function fmtRupiah(n) {
   return 'Rp' + Number(n || 0).toLocaleString('id-ID');
 }
@@ -43,6 +78,8 @@ async function bootstrap() {
     window.location.href = '/index.html';
     return;
   }
+
+  state.isDeveloper = !!me.isDeveloper;
 
   document.getElementById('user-name').textContent = me.user.username;
   document.getElementById('user-avatar').src = me.user.avatar
