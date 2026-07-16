@@ -605,6 +605,41 @@ router.get('/backups/:filename/download', requireDeveloper, (req, res) => {
   fs.createReadStream(filePath).pipe(res);
 });
 
+// --- SUPPORT PANEL (post the "Buka Ticket Support" embed+button to a channel) ---
+
+router.post('/guilds/:guildId/support-panel', async (req, res) => {
+  const guild = discordClient?.guilds.cache.get(req.params.guildId);
+  if (!guild) return res.status(404).json({ error: 'Bot belum bergabung ke server ini.' });
+
+  const { channel_id, title, description } = req.body;
+  if (!channel_id) return res.status(400).json({ error: 'Channel wajib dipilih.' });
+
+  const channel = guild.channels.cache.get(channel_id);
+  if (!channel || !channel.isTextBased()) return res.status(400).json({ error: 'Channel tidak valid.' });
+
+  const embed = new EmbedBuilder()
+    .setTitle(title || '🎫 MicroStore - Support')
+    .setDescription(
+      description || 'Butuh bantuan? Klik tombol di bawah untuk membuka ticket support pribadi dengan tim kami.'
+    )
+    .setColor(0x2ecc71);
+
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId('support_panel_create_ticket')
+      .setLabel('Buka Ticket Support')
+      .setEmoji('🎫')
+      .setStyle(ButtonStyle.Success)
+  );
+
+  try {
+    await channel.send({ embeds: [embed], components: [row] });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Gagal mengirim panel support: ' + err.message });
+  }
+});
+
 // --- BOT PROFILE (developer-only, global — not guild-scoped) ---
 // Lets the developer change the bot's own Discord identity: username,
 // avatar, profile banner, and application "About Me" description.

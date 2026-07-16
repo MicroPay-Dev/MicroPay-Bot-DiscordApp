@@ -739,6 +739,23 @@ async function renderSettings() {
 
       <div style="margin-top:1.2rem;"><button class="btn" type="submit">💾 Simpan Settings</button></div>
     </form>
+
+    <div class="hud-panel" style="margin-top:1.5rem;">
+      <span class="corner-bl"></span><span class="corner-br"></span>
+      <div class="panel-title">📨 Kirim Panel Support ke Channel</div>
+      <form id="support-panel-form">
+        <label>Channel Tujuan</label>
+        <select name="channel_id" required>
+          <option value="">-- Pilih Channel --</option>
+          ${channels.map((c) => `<option value="${c.id}">#${escapeHtml(c.name)}</option>`).join('')}
+        </select>
+        <label>Judul Panel (opsional)</label>
+        <input name="title" placeholder="🎫 MicroStore - Support">
+        <label>Deskripsi Panel (opsional)</label>
+        <textarea name="description" rows="2" placeholder="Butuh bantuan? Klik tombol di bawah untuk membuka ticket support..."></textarea>
+        <div style="margin-top:1.2rem;"><button class="btn" type="submit">📨 Pasang Panel Support</button></div>
+      </form>
+    </div>
   `;
 
   document.getElementById('settings-form').addEventListener('submit', async (e) => {
@@ -750,6 +767,27 @@ async function renderSettings() {
     try {
       await Api.put(`/api/dashboard/guilds/${state.guildId}/settings`, body);
       toast('Settings disimpan');
+    } catch (err) {
+      toast('Gagal: ' + err.message, true);
+    }
+  });
+
+  document.getElementById('support-panel-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const channelId = fd.get('channel_id');
+    if (!channelId) {
+      toast('Pilih channel tujuan terlebih dahulu', true);
+      return;
+    }
+    try {
+      await Api.post(`/api/dashboard/guilds/${state.guildId}/support-panel`, {
+        channel_id: channelId,
+        title: fd.get('title'),
+        description: fd.get('description'),
+      });
+      toast('Panel support berhasil dipasang di channel');
+      e.target.reset();
     } catch (err) {
       toast('Gagal: ' + err.message, true);
     }
