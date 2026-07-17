@@ -28,7 +28,7 @@ module.exports = {
     const row = new ActionRowBuilder().addComponents(
       [1, 2, 3, 4, 5].map((n) =>
         new ButtonBuilder()
-          .setCustomId(`rating_${n}_${orderId}`)
+          .setCustomId(`rating_${interaction.guild.id}_${n}_${orderId}`)
           .setLabel('⭐'.repeat(n))
           .setStyle(ButtonStyle.Secondary)
       )
