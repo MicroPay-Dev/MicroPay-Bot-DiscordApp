@@ -12,10 +12,39 @@ async function fetchJson(url) {
   return res.json();
 }
 
+const QUESTS_CDN = 'https://cdn.discordapp.com';
+
+// Quest asset fields (hero, quest_bar_hero, reward.asset, etc.) come back as
+// either a full URL, a "quests/<id>/<file>" path, or a bare filename that
+// needs the quest ID prefixed onto it manually.
+function resolveQuestAssetUrl(questId, assetName) {
+  if (typeof assetName !== 'string' || assetName.length === 0) return undefined;
+  if (assetName.startsWith('http://') || assetName.startsWith('https://')) return assetName;
+  if (assetName.startsWith('quests/')) return `${QUESTS_CDN}/${assetName}`;
+  return `${QUESTS_CDN}/quests/${questId}/${assetName}`;
+}
+
+// Collectible releases expose several possible banner fields depending on
+// context (catalog page, hero carousel, mobile, etc) — use whichever is
+// actually present, in order of visual quality/size.
+function resolveCollectibleBannerUrl(collectible) {
+  const candidates = [
+    collectible.featured_block_url,
+    collectible.catalog_banner_url,
+    collectible.hero_banner_url,
+    collectible.mobile_banner_url,
+    collectible.mobile_bg_url,
+    collectible.logo_url,
+    collectible.pdp_bg_url,
+  ];
+  return candidates.find((c) => typeof c === 'string' && c.length > 0);
+}
+
 function buildQuestEmbed(quest) {
   const config = quest.config || {};
   const messages = config.messages || {};
   const app = config.application || {};
+  const assets = config.assets || {};
   const rewards = (config.rewards_config?.rewards || [])
     .map((r) => r.messages?.name_with_article || r.messages?.name)
     .filter(Boolean);
@@ -27,6 +56,10 @@ function buildQuestEmbed(quest) {
       { name: '🎮 Game', value: messages.game_title || app.name || '-', inline: false },
       { name: '🎁 Reward', value: rewards.length ? rewards.join(', ') : '-', inline: false }
     );
+
+  // Prefer the full hero banner over the smaller quest-bar hero image.
+  const heroUrl = resolveQuestAssetUrl(quest.id, assets.hero) || resolveQuestAssetUrl(quest.id, assets.quest_bar_hero);
+  if (heroUrl) embed.setImage(heroUrl);
 
   if (config.expires_at) {
     embed.addFields({ name: '⏰ Expires', value: new Date(config.expires_at).toUTCString(), inline: false });
@@ -46,6 +79,10 @@ function buildCollectibleEmbed(collectible) {
   if (collectible.summary && collectible.summary.trim()) {
     embed.setDescription(collectible.summary.trim());
   }
+
+  const bannerUrl = resolveCollectibleBannerUrl(collectible);
+  if (bannerUrl) embed.setImage(bannerUrl);
+
   if (productNames.length) {
     embed.addFields({ name: '🛍️ Items', value: productNames.slice(0, 15).join('\n'), inline: false });
   }
