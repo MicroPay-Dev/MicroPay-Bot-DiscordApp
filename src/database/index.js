@@ -96,6 +96,17 @@ db.prepare(`CREATE TABLE IF NOT EXISTS ratings (
   comment TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 )`).run();
+// If the "ratings" table already existed from before order_id (or any other
+// column) was added to this schema, CREATE TABLE IF NOT EXISTS above is a
+// no-op and the old table keeps its outdated structure. Backfill any
+// missing columns explicitly so this works regardless of when the table
+// was first created on this database file.
+ensureColumn('ratings', 'guild_id', 'TEXT');
+ensureColumn('ratings', 'order_id', 'INTEGER');
+ensureColumn('ratings', 'user_id', 'TEXT');
+ensureColumn('ratings', 'stars', 'INTEGER');
+ensureColumn('ratings', 'comment', 'TEXT');
+ensureColumn('ratings', 'created_at', 'DATETIME DEFAULT CURRENT_TIMESTAMP');
 
 // Quest Feed: tracks which quests/collectibles from api.discordquest.com
 // have already been announced, so the poller never posts the same item twice.
