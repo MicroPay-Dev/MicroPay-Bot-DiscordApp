@@ -23,6 +23,6 @@ module.exports = {
       .setImage(settings.qris_image_url)
       .setColor(0x5865f2);
 
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [embed] });
   },
 };

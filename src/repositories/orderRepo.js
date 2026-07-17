@@ -28,4 +28,10 @@ module.exports = {
       .prepare('SELECT * FROM orders WHERE guild_id = ? ORDER BY id DESC LIMIT ?')
       .all(guildId, limit);
   },
+
+  getLatestByUser(guildId, userId) {
+    return db
+      .prepare('SELECT * FROM orders WHERE guild_id = ? AND user_id = ? ORDER BY id DESC LIMIT 1')
+      .get(guildId, userId);
+  },
 };
