@@ -103,6 +103,7 @@ module.exports = {
           .setColor(0xff0000) // YouTube red
           .setAuthor({ name: video.channelName, url: `https://www.youtube.com/channel/${youtubeChannelId}` })
           .setDescription(`Klik link untuk nonton video`)
+          .setImage(`https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg`)
           .setTimestamp(video.published);
 
         await discordChannel.send({ embeds: [embed] }).catch(console.error);
