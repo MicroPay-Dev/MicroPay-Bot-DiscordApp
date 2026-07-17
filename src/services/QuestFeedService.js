@@ -4,7 +4,7 @@ const questFeedRepo = require('../repositories/questFeedRepo');
 
 const QUESTS_URL = 'https://api.discordquest.com/api/quests';
 const COLLECTIBLES_URL = 'https://api.discordquest.com/api/collectibles';
-const POLL_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+const POLL_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 async function fetchJson(url) {
   const res = await fetch(url);
@@ -161,6 +161,6 @@ module.exports = {
     setTimeout(run, 20 * 1000);
     setInterval(run, POLL_INTERVAL_MS);
 
-    console.log('✅ Quest feed scheduler started (every 1 hour)');
+    console.log('✅ Quest feed scheduler started (every 5 minutes)');
   },
 };
