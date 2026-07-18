@@ -77,6 +77,35 @@
   .footer-links a { color: var(--accent-cyan); text-decoration: none; }
   .footer-links a:hover { text-decoration: underline; }
 
+  #discord-widget {
+    margin-bottom: 2rem;
+    padding: 1rem 1.4rem;
+    border: 1px solid var(--border-line);
+    background: var(--bg-panel);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+  }
+  .widget-status { display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary); }
+  .widget-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 6px var(--success);
+    animation: pulse 2s infinite;
+  }
+  @media (prefers-reduced-motion: reduce) { .widget-dot { animation: none; } }
+  .widget-join-link {
+    color: var(--accent-cyan);
+    text-decoration: none;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+  .widget-join-link:hover { text-decoration: underline; }
+
   #error-banner {
     display: none;
     background: rgba(255,77,109,0.12);
@@ -107,6 +136,10 @@
       <a class="cta-btn cta-secondary" href="/auth/login">▸ Login</a>
     </div>
 
+    <div id="discord-widget">
+      <span class="widget-status">Memuat info server...</span>
+    </div>
+
     <div class="footer-links">
       <a href="/support.html">Support</a> &middot; Butuh bantuan? Gabung server kami.
     </div>
@@ -120,6 +153,34 @@
       banner.style.display = 'block';
       banner.textContent = 'LOGIN GAGAL: ' + err;
     }
+
+    // Live Discord server widget: online member count + instant invite.
+    // Requires Server Settings > Widget > Enable Server Widget to be ON.
+    const DISCORD_GUILD_ID = '1524466433730412554';
+    const FALLBACK_INVITE = 'https://discord.gg/6YqK6npm4z';
+
+    async function loadDiscordWidget() {
+      const el = document.getElementById('discord-widget');
+      try {
+        const res = await fetch(`https://discord.com/api/guilds/${DISCORD_GUILD_ID}/widget.json`);
+        if (!res.ok) throw new Error('widget not enabled');
+        const data = await res.json();
+        const onlineCount = data.presence_count ?? 0;
+        const inviteUrl = data.instant_invite || FALLBACK_INVITE;
+
+        el.innerHTML = `
+          <span class="widget-status"><span class="widget-dot"></span> ${onlineCount} member online</span>
+          <a class="widget-join-link" href="${inviteUrl}" target="_blank" rel="noopener">💬 Join Server →</a>
+        `;
+      } catch {
+        // Widget disabled or unreachable — fall back to a plain join link
+        // instead of hiding the section entirely.
+        el.innerHTML = `<a class="widget-join-link" href="${FALLBACK_INVITE}" target="_blank" rel="noopener">💬 Join Server →</a>`;
+      }
+    }
+
+    loadDiscordWidget();
+    setInterval(loadDiscordWidget, 60 * 1000);
   </script>
 
 </body>
