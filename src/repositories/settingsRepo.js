@@ -110,22 +110,18 @@ module.exports = {
     );
   },
 
-  setQuestFeedQuest(guildId, { enabled, channelId }) {
+  setQuestFeedQuest(guildId, { enabled, channelId, roleId }) {
     this.ensure(guildId);
-    db.prepare(`UPDATE settings SET quest_feed_quest_enabled = ?, quest_feed_quest_channel = ? WHERE guild_id = ?`).run(
-      enabled ? 1 : 0,
-      channelId || null,
-      guildId
-    );
+    db.prepare(
+      `UPDATE settings SET quest_feed_quest_enabled = ?, quest_feed_quest_channel = ?, quest_feed_quest_role = ? WHERE guild_id = ?`
+    ).run(enabled ? 1 : 0, channelId || null, roleId || null, guildId);
   },
 
-  setQuestFeedCollectible(guildId, { enabled, channelId }) {
+  setQuestFeedCollectible(guildId, { enabled, channelId, roleId }) {
     this.ensure(guildId);
-    db.prepare(`UPDATE settings SET quest_feed_collectible_enabled = ?, quest_feed_collectible_channel = ? WHERE guild_id = ?`).run(
-      enabled ? 1 : 0,
-      channelId || null,
-      guildId
-    );
+    db.prepare(
+      `UPDATE settings SET quest_feed_collectible_enabled = ?, quest_feed_collectible_channel = ?, quest_feed_collectible_role = ? WHERE guild_id = ?`
+    ).run(enabled ? 1 : 0, channelId || null, roleId || null, guildId);
   },
 
   setTicketCategories(guildId, { orderCategory, supportCategory }) {

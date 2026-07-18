@@ -287,8 +287,10 @@ router.put('/guilds/:guildId/settings', (req, res) => {
     empty_catalog_message,
     quest_feed_quest_enabled,
     quest_feed_quest_channel,
+    quest_feed_quest_role,
     quest_feed_collectible_enabled,
     quest_feed_collectible_channel,
+    quest_feed_collectible_role,
     order_category,
     support_category,
   } = req.body;
@@ -301,18 +303,28 @@ router.put('/guilds/:guildId/settings', (req, res) => {
       supportCategory: support_category !== undefined ? support_category : current.support_category,
     });
   }
-  if (quest_feed_quest_enabled !== undefined || quest_feed_quest_channel !== undefined) {
+  if (
+    quest_feed_quest_enabled !== undefined ||
+    quest_feed_quest_channel !== undefined ||
+    quest_feed_quest_role !== undefined
+  ) {
     const current = settingsRepo.get(guildId);
     settingsRepo.setQuestFeedQuest(guildId, {
       enabled: quest_feed_quest_enabled !== undefined ? !!quest_feed_quest_enabled : !!current.quest_feed_quest_enabled,
       channelId: quest_feed_quest_channel !== undefined ? quest_feed_quest_channel : current.quest_feed_quest_channel,
+      roleId: quest_feed_quest_role !== undefined ? quest_feed_quest_role : current.quest_feed_quest_role,
     });
   }
-  if (quest_feed_collectible_enabled !== undefined || quest_feed_collectible_channel !== undefined) {
+  if (
+    quest_feed_collectible_enabled !== undefined ||
+    quest_feed_collectible_channel !== undefined ||
+    quest_feed_collectible_role !== undefined
+  ) {
     const current = settingsRepo.get(guildId);
     settingsRepo.setQuestFeedCollectible(guildId, {
       enabled: quest_feed_collectible_enabled !== undefined ? !!quest_feed_collectible_enabled : !!current.quest_feed_collectible_enabled,
       channelId: quest_feed_collectible_channel !== undefined ? quest_feed_collectible_channel : current.quest_feed_collectible_channel,
+      roleId: quest_feed_collectible_role !== undefined ? quest_feed_collectible_role : current.quest_feed_collectible_role,
     });
   }
   if (welcome_message !== undefined) settingsRepo.setWelcomeMessage(guildId, welcome_message);
