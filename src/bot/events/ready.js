@@ -62,7 +62,7 @@ module.exports = {
       const settings = settingsRepo.get(guild.id);
       if (settings?.stage_enabled && settings?.stage_channel) {
         try {
-          StageService.connect(guild, settings.stage_channel);
+          await StageService.connect(guild, settings.stage_channel);
         } catch (err) {
           console.error(`❌ Gagal auto-rejoin stage di guild ${guild.id}:`, err.message);
         }

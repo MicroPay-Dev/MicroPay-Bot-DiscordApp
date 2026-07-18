@@ -1,4 +1,5 @@
 const { joinVoiceChannel, VoiceConnectionStatus, entersState } = require('@discordjs/voice');
+const { StageInstancePrivacyLevel } = require('discord.js');
 const LogService = require('./LogService');
 
 // One active connection per guild, so re-triggering setup/startup doesn't
@@ -11,8 +12,13 @@ module.exports = {
    * see the bot present just by looking at the stage — no command needed.
    * The bot joins as a silent audience member (self-muted/deafened); it
    * does not request to speak or transmit any audio.
+   *
+   * Joining the voice connection alone does NOT make the stage show as
+   * "Live" in Discord — a Stage Instance (with a topic) has to be started
+   * explicitly, which is what actually puts the ⚡ Live badge on the
+   * channel and makes it visible/joinable from the member list.
    */
-  connect(guild, channelId) {
+  async connect(guild, channelId) {
     // Drop any existing connection for this guild first (e.g. channel changed).
     this.disconnect(guild.id);
 
@@ -23,6 +29,24 @@ module.exports = {
       selfDeaf: true,
       selfMute: true,
     });
+
+    const stageChannel = guild.channels.cache.get(channelId);
+    if (stageChannel && !stageChannel.stageInstance) {
+      try {
+        await stageChannel.createStageInstance({
+          topic: '🟢 MICROSTORE Online',
+          privacyLevel: StageInstancePrivacyLevel.GuildOnly,
+        });
+      } catch (err) {
+        // Most likely cause: bot is missing Manage Channels on this stage,
+        // or a stage instance was created by someone else in a race.
+        await LogService.log(
+          guild,
+          'stage',
+          `⚠️ Bot berhasil join Stage Channel tapi gagal memulai sesi Stage (Live): ${err.message}. Pastikan bot punya izin Manage Channels di channel ini.`
+        ).catch(() => {});
+      }
+    }
 
     connection.on(VoiceConnectionStatus.Disconnected, async () => {
       try {

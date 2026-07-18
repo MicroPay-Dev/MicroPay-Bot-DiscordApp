@@ -21,7 +21,7 @@ module.exports = {
     settingsRepo.setStage(interaction.guild.id, { enabled: true, channelId: stageChannel.id });
 
     try {
-      StageService.connect(interaction.guild, stageChannel.id);
+      await StageService.connect(interaction.guild, stageChannel.id);
       await interaction.reply({
         content: `✅ Bot akan stay di **${stageChannel.name}**. Member bisa lihat bot online langsung dari Stage tanpa command.`,
         ephemeral: true,
