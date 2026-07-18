@@ -3,6 +3,7 @@ const YouTubeService = require('../../services/YouTubeService');
 const BackupService = require('../../services/BackupService');
 const BumpReminderService = require('../../services/BumpReminderService');
 const QuestFeedService = require('../../services/QuestFeedService');
+const PresenceService = require('../../services/PresenceService');
 
 // Re-registers all global slash commands on every boot, using whatever
 // command files currently exist in src/bot/commands (already loaded into
@@ -49,5 +50,8 @@ module.exports = {
 
     // Start Discord Quest auto-feed scheduler (every 1 hour, if enabled per-guild)
     QuestFeedService.startPolling(client);
+
+    // Rotate bot status (server count, member count, uptime) every 20s
+    PresenceService.startRotating(client, 20);
   },
 };
