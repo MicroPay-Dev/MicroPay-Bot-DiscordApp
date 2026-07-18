@@ -5,6 +5,9 @@ const LogService = require('./LogService');
 // One active connection per guild, so re-triggering setup/startup doesn't
 // pile up duplicate connections to the same stage.
 const activeConnections = new Map();
+// Pending setTimeout handles for reconnect attempts, so repeated disconnects
+// don't stack up multiple parallel retry loops for the same guild.
+const pendingRetries = new Map();
 
 module.exports = {
   /**
@@ -51,16 +54,24 @@ module.exports = {
     connection.on(VoiceConnectionStatus.Disconnected, async () => {
       try {
         // Could be a temporary network blip or a real move/kick — wait to
-        // see which, then only give up (and log it) if it's the latter.
+        // see which. If Discord resumes the connection on its own within
+        // this window, nothing else needs to happen.
         await Promise.race([
           entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
           entersState(connection, VoiceConnectionStatus.Connecting, 5_000),
         ]);
       } catch {
+        // Did NOT auto-resume — actively rejoin instead of giving up, so the
+        // bot keeps coming back to the stage instead of silently vanishing.
         connection.destroy();
         activeConnections.delete(guild.id);
-        await LogService.log(guild, 'stage', '⚠️ Bot terputus dari Stage Channel dan tidak berhasil reconnect otomatis.').catch(() => {});
+        await LogService.log(guild, 'stage', '⚠️ Bot terputus dari Stage Channel, mencoba reconnect otomatis...').catch(() => {});
+        this.scheduleReconnect(guild, channelId);
       }
+    });
+
+    connection.on(VoiceConnectionStatus.Destroyed, () => {
+      activeConnections.delete(guild.id);
     });
 
     activeConnections.set(guild.id, connection);
@@ -73,9 +84,37 @@ module.exports = {
       existing.destroy();
       activeConnections.delete(guildId);
     }
+    const pendingRetry = pendingRetries.get(guildId);
+    if (pendingRetry) {
+      clearTimeout(pendingRetry);
+      pendingRetries.delete(guildId);
+    }
   },
 
   isConnected(guildId) {
     return activeConnections.has(guildId);
+  },
+
+  /**
+   * Keeps retrying to rejoin the stage every 10s until it succeeds. This is
+   * what actually makes the bot "stay 24/7" — a single failed reconnect
+   * attempt (e.g. a brief network blip on Railway's side) no longer means
+   * the bot is gone from the stage for good.
+   */
+  scheduleReconnect(guild, channelId) {
+    const existingTimer = pendingRetries.get(guild.id);
+    if (existingTimer) clearTimeout(existingTimer);
+
+    const timer = setTimeout(async () => {
+      pendingRetries.delete(guild.id);
+      try {
+        await this.connect(guild, channelId);
+      } catch (err) {
+        console.error(`❌ Gagal reconnect ke stage di guild ${guild.id}:`, err.message);
+        this.scheduleReconnect(guild, channelId);
+      }
+    }, 10_000);
+
+    pendingRetries.set(guild.id, timer);
   },
 };
