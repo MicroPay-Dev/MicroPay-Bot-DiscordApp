@@ -143,7 +143,7 @@ async function collectNewCollectibleEmbeds() {
   return embeds;
 }
 
-async function sendToGuilds(client, embeds, isEnabled, getChannelId) {
+async function sendToGuilds(client, embeds, isEnabled, getChannelId, getRoleId) {
   if (!embeds.length) return;
 
   for (const guild of client.guilds.cache.values()) {
@@ -156,9 +156,17 @@ async function sendToGuilds(client, embeds, isEnabled, getChannelId) {
     const channel = guild.channels.cache.get(channelId);
     if (!channel || !channel.isTextBased()) continue;
 
+    const roleId = getRoleId(settings);
+    // Only tag the role on the FIRST message of the batch, not once per
+    // chunk of 10 embeds, so people don't get pinged repeatedly.
+    let firstChunk = true;
+
     // Discord allows a max of 10 embeds per message.
     for (let i = 0; i < embeds.length; i += 10) {
-      await channel.send({ embeds: embeds.slice(i, i + 10) }).catch(() => {});
+      const payload = { embeds: embeds.slice(i, i + 10) };
+      if (roleId && firstChunk) payload.content = `<@&${roleId}>`;
+      await channel.send(payload).catch(() => {});
+      firstChunk = false;
     }
   }
 }
@@ -173,14 +181,16 @@ async function checkAndAnnounce(client) {
     client,
     questEmbeds,
     (s) => !!s.quest_feed_quest_enabled,
-    (s) => s.quest_feed_quest_channel
+    (s) => s.quest_feed_quest_channel,
+    (s) => s.quest_feed_quest_role
   );
 
   await sendToGuilds(
     client,
     collectibleEmbeds,
     (s) => !!s.quest_feed_collectible_enabled,
-    (s) => s.quest_feed_collectible_channel
+    (s) => s.quest_feed_collectible_channel,
+    (s) => s.quest_feed_collectible_role
   );
 }
 

@@ -508,6 +508,7 @@ async function renderBroadcast() {
 
 async function renderQuestUpdate() {
   const channels = state.meta?.channels || [];
+  const roles = state.meta?.roles || [];
   const settings = await Api.get(`/api/dashboard/guilds/${state.guildId}/settings`);
 
   content.innerHTML = `
@@ -527,6 +528,11 @@ async function renderQuestUpdate() {
           <option value="">-- Pilih Channel --</option>
           ${channels.map((c) => `<option value="${c.id}" ${c.id === settings.quest_feed_quest_channel ? 'selected' : ''}>#${escapeHtml(c.name)}</option>`).join('')}
         </select>
+        <label>Tag Role Saat Quest Baru (opsional)</label>
+        <select name="quest_feed_quest_role">
+          <option value="">-- Tanpa tag role --</option>
+          ${roles.map((r) => `<option value="${r.id}" ${r.id === settings.quest_feed_quest_role ? 'selected' : ''}>${escapeHtml(r.name)}</option>`).join('')}
+        </select>
 
         <label style="display:flex; align-items:center; gap:0.5rem; margin-top:1.2rem;">
           <input type="checkbox" name="quest_feed_collectible_enabled" style="width:auto;" ${settings.quest_feed_collectible_enabled ? 'checked' : ''}>
@@ -536,6 +542,11 @@ async function renderQuestUpdate() {
         <select name="quest_feed_collectible_channel">
           <option value="">-- Pilih Channel --</option>
           ${channels.map((c) => `<option value="${c.id}" ${c.id === settings.quest_feed_collectible_channel ? 'selected' : ''}>#${escapeHtml(c.name)}</option>`).join('')}
+        </select>
+        <label>Tag Role Saat Collectible Baru (opsional)</label>
+        <select name="quest_feed_collectible_role">
+          <option value="">-- Tanpa tag role --</option>
+          ${roles.map((r) => `<option value="${r.id}" ${r.id === settings.quest_feed_collectible_role ? 'selected' : ''}>${escapeHtml(r.name)}</option>`).join('')}
         </select>
 
         <div style="margin-top:1.2rem;"><button class="btn" type="submit">💾 Simpan Auto Feed</button></div>
@@ -579,8 +590,10 @@ async function renderQuestUpdate() {
       await Api.put(`/api/dashboard/guilds/${state.guildId}/settings`, {
         quest_feed_quest_enabled: e.target.querySelector('[name="quest_feed_quest_enabled"]').checked,
         quest_feed_quest_channel: fd.get('quest_feed_quest_channel') || null,
+        quest_feed_quest_role: fd.get('quest_feed_quest_role') || null,
         quest_feed_collectible_enabled: e.target.querySelector('[name="quest_feed_collectible_enabled"]').checked,
         quest_feed_collectible_channel: fd.get('quest_feed_collectible_channel') || null,
+        quest_feed_collectible_role: fd.get('quest_feed_collectible_role') || null,
       });
       toast('Pengaturan Auto Quest Feed disimpan');
     } catch (err) {
