@@ -132,4 +132,13 @@ module.exports = {
       guildId
     );
   },
+
+  setStage(guildId, { enabled, channelId }) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET stage_enabled = ?, stage_channel = ? WHERE guild_id = ?`).run(
+      enabled ? 1 : 0,
+      channelId || null,
+      guildId
+    );
+  },
 };

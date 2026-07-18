@@ -4,6 +4,8 @@ const BackupService = require('../../services/BackupService');
 const BumpReminderService = require('../../services/BumpReminderService');
 const QuestFeedService = require('../../services/QuestFeedService');
 const PresenceService = require('../../services/PresenceService');
+const StageService = require('../../services/StageService');
+const settingsRepo = require('../../repositories/settingsRepo');
 
 // Re-registers all global slash commands on every boot, using whatever
 // command files currently exist in src/bot/commands (already loaded into
@@ -53,5 +55,18 @@ module.exports = {
 
     // Rotate bot status (server count, member count, uptime) every 20s
     PresenceService.startRotating(client, 20);
+
+    // Re-join any Stage Channels configured per-guild, so a bot restart
+    // (e.g. Railway redeploy) doesn't leave the bot missing from the stage.
+    for (const guild of client.guilds.cache.values()) {
+      const settings = settingsRepo.get(guild.id);
+      if (settings?.stage_enabled && settings?.stage_channel) {
+        try {
+          StageService.connect(guild, settings.stage_channel);
+        } catch (err) {
+          console.error(`❌ Gagal auto-rejoin stage di guild ${guild.id}:`, err.message);
+        }
+      }
+    }
   },
 };

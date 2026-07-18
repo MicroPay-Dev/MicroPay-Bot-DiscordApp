@@ -87,6 +87,8 @@ ensureColumn('settings', 'quest_feed_collectible_enabled', 'INTEGER DEFAULT 0');
 ensureColumn('settings', 'quest_feed_collectible_channel', 'TEXT');
 ensureColumn('settings', 'quest_feed_quest_role', 'TEXT');
 ensureColumn('settings', 'quest_feed_collectible_role', 'TEXT');
+ensureColumn('settings', 'stage_enabled', 'INTEGER DEFAULT 0');
+ensureColumn('settings', 'stage_channel', 'TEXT');
 
 // Ratings table
 db.prepare(`CREATE TABLE IF NOT EXISTS ratings (
