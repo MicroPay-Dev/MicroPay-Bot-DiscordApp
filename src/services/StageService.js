@@ -96,6 +96,19 @@ module.exports = {
   },
 
   /**
+   * Tears down every active stage connection and cancels any pending
+   * reconnect timers. MUST be called during graceful shutdown — otherwise
+   * these open voice connections/timers can keep the Node process alive
+   * past Railway's SIGTERM grace period, causing a forced SIGKILL (which
+   * looks like the bot randomly vanishing from the stage on every restart).
+   */
+  disconnectAll() {
+    for (const guildId of [...activeConnections.keys()]) {
+      this.disconnect(guildId);
+    }
+  },
+
+  /**
    * Keeps retrying to rejoin the stage every 10s until it succeeds. This is
    * what actually makes the bot "stay 24/7" — a single failed reconnect
    * attempt (e.g. a brief network blip on Railway's side) no longer means

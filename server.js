@@ -3,6 +3,7 @@ const path = require('path');
 const express = require('express');
 const { createClient } = require('./src/bot/client');
 const { PermissionsBitField } = require('discord.js');
+const StageService = require('./src/services/StageService');
 const dashboardApi = require('./src/dashboard/dashboardApi');
 const { sessionMiddleware } = require('./src/dashboard/session');
 const createAuthRouter = require('./src/dashboard/authRoutes');
@@ -66,6 +67,10 @@ client.login(process.env.DISCORD_TOKEN);
 async function shutdown(signal) {
   console.log(`Received ${signal}`);
   try {
+    // Tear down voice/stage connections and their reconnect timers FIRST —
+    // otherwise they can keep the process alive past Railway's grace
+    // period, causing a forced kill instead of a clean exit.
+    StageService.disconnectAll();
     await client.destroy();
     httpServer.close(() => process.exit(0));
   } catch (err) {
