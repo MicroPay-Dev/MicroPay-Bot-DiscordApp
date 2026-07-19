@@ -21,6 +21,25 @@ async function createTicketChannel(guild, user, type) {
     },
   ];
 
+  // Explicitly grant the bot itself access, regardless of how restrictive
+  // the target category's permissions are. Without this, a category that
+  // denies @everyone (which the bot inherits from unless overridden) can
+  // silently block the bot from sending messages in channels it just
+  // created there — surfacing as "DiscordAPIError[50001]: Missing Access".
+  if (guild.members.me) {
+    overwrites.push({
+      id: guild.members.me.id,
+      allow: [
+        PermissionsBitField.Flags.ViewChannel,
+        PermissionsBitField.Flags.SendMessages,
+        PermissionsBitField.Flags.AttachFiles,
+        PermissionsBitField.Flags.ReadMessageHistory,
+        PermissionsBitField.Flags.ManageChannels,
+        PermissionsBitField.Flags.ManageMessages,
+      ],
+    });
+  }
+
   if (settings?.admin_role) {
     overwrites.push({
       id: settings.admin_role,
