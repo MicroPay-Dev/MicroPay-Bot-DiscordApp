@@ -121,11 +121,11 @@ module.exports = {
 
     // Send rating prompt in channel
     const ratingRow = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId(`rating_${guild.id}_1_${order.id}`).setLabel('⭐').setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId(`rating_${guild.id}_2_${order.id}`).setLabel('⭐⭐').setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId(`rating_${guild.id}_3_${order.id}`).setLabel('⭐⭐⭐').setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId(`rating_${guild.id}_4_${order.id}`).setLabel('⭐⭐⭐⭐').setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId(`rating_${guild.id}_5_${order.id}`).setLabel('⭐⭐⭐⭐⭐').setStyle(ButtonStyle.Primary)
+      new ButtonBuilder().setCustomId(`rating_${guild.id}_1_${order.id}_auto`).setLabel('⭐').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`rating_${guild.id}_2_${order.id}_auto`).setLabel('⭐⭐').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`rating_${guild.id}_3_${order.id}_auto`).setLabel('⭐⭐⭐').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`rating_${guild.id}_4_${order.id}_auto`).setLabel('⭐⭐⭐⭐').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`rating_${guild.id}_5_${order.id}_auto`).setLabel('⭐⭐⭐⭐⭐').setStyle(ButtonStyle.Primary)
     );
 
     await channel.send({
@@ -200,11 +200,11 @@ module.exports = {
 
     // Send rating prompt
     const ratingRow = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId(`rating_${guild.id}_1_${order.id}`).setLabel('⭐').setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId(`rating_${guild.id}_2_${order.id}`).setLabel('⭐⭐').setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId(`rating_${guild.id}_3_${order.id}`).setLabel('⭐⭐⭐').setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId(`rating_${guild.id}_4_${order.id}`).setLabel('⭐⭐⭐⭐').setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId(`rating_${guild.id}_5_${order.id}`).setLabel('⭐⭐⭐⭐⭐').setStyle(ButtonStyle.Primary)
+      new ButtonBuilder().setCustomId(`rating_${guild.id}_1_${order.id}_auto`).setLabel('⭐').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`rating_${guild.id}_2_${order.id}_auto`).setLabel('⭐⭐').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`rating_${guild.id}_3_${order.id}_auto`).setLabel('⭐⭐⭐').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`rating_${guild.id}_4_${order.id}_auto`).setLabel('⭐⭐⭐⭐').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`rating_${guild.id}_5_${order.id}_auto`).setLabel('⭐⭐⭐⭐⭐').setStyle(ButtonStyle.Primary)
     );
 
     await channel.send({

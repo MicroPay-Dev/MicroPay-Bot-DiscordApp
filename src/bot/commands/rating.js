@@ -6,29 +6,34 @@ const {
   ButtonStyle,
   EmbedBuilder,
 } = require('discord.js');
-const orderRepo = require('../../repositories/orderRepo');
+const RATING_PRODUCTS = require('../../utils/ratingProducts');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('rating')
     .setDescription('Kirim form rating ke buyer lewat DM')
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
-    .addUserOption((o) => o.setName('user').setDescription('Buyer yang akan diminta rating').setRequired(true)),
+    .addUserOption((o) => o.setName('user').setDescription('Buyer yang akan diminta rating').setRequired(true))
+    .addStringOption((o) =>
+      o
+        .setName('produk')
+        .setDescription('Produk yang dibeli')
+        .setRequired(true)
+        .addChoices(...RATING_PRODUCTS.map((name, i) => ({ name, value: String(i) })))
+    ),
 
   async execute(interaction) {
     const targetUser = interaction.options.getUser('user');
+    const productIndex = interaction.options.getString('produk');
+    const productName = RATING_PRODUCTS[Number(productIndex)] || 'Produk';
 
-    // Link to the buyer's most recent order in this server if one exists, so
-    // the testimonial embed posted later can show the real product name.
-    // Otherwise fall back to a synthetic (still-unique) ID so the existing
-    // rating button/modal flow still works exactly the same way.
-    const latestOrder = orderRepo.getLatestByUser(interaction.guild.id, targetUser.id);
-    const orderId = latestOrder ? latestOrder.id : Date.now();
-
+    // Product token embedded in the customId chain (button -> modal) so the
+    // buyer's form never needs to ask them what they bought — Micro already
+    // told us via the command itself.
     const row = new ActionRowBuilder().addComponents(
       [1, 2, 3, 4, 5].map((n) =>
         new ButtonBuilder()
-          .setCustomId(`rating_${interaction.guild.id}_${n}_${orderId}`)
+          .setCustomId(`rating_${interaction.guild.id}_${n}_${Date.now()}_${productIndex}`)
           .setLabel('⭐'.repeat(n))
           .setStyle(ButtonStyle.Secondary)
       )
@@ -39,6 +44,7 @@ module.exports = {
       .setDescription(
         `Halo! Terima kasih sudah berbelanja di **${interaction.guild.name}**.\nBoleh minta waktu sebentar untuk kasih rating pelayanan kami?`
       )
+      .addFields({ name: '📦 Produk', value: productName })
       .setColor(0xf6c90e);
 
     await interaction.deferReply({ ephemeral: true });

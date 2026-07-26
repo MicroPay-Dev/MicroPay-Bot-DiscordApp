@@ -3,6 +3,7 @@ const ratingRepo = require('../../repositories/ratingRepo');
 const settingsRepo = require('../../repositories/settingsRepo');
 const orderRepo = require('../../repositories/orderRepo');
 const productRepo = require('../../repositories/productRepo');
+const RATING_PRODUCTS = require('../../utils/ratingProducts');
 
 const STAR_MAP = { 1: '⭐', 2: '⭐⭐', 3: '⭐⭐⭐', 4: '⭐⭐⭐⭐', 5: '⭐⭐⭐⭐⭐' };
 
@@ -13,6 +14,7 @@ module.exports = {
     const guildId = parts[2];
     const stars = parseInt(parts[3]);
     const orderId = parseInt(parts[4]);
+    const productToken = parts[5];
 
     // This modal can be submitted from a DM (e.g. after /rating), where
     // interaction.guild is null — fall back to looking the guild up by the
@@ -27,7 +29,6 @@ module.exports = {
       return interaction.reply({ content: '⚠️ Kamu sudah memberi rating untuk order ini.', ephemeral: true });
     }
 
-    const productName = interaction.fields.getTextInputValue('product') || null;
     const comment = interaction.fields.getTextInputValue('comment') || null;
     ratingRepo.add(guild.id, orderId, interaction.user.id, stars, comment);
 
@@ -43,9 +44,17 @@ module.exports = {
     const logChannel = guild.channels.cache.get(settings.rating_channel);
     if (!logChannel) return;
 
-    const order = orderRepo.getById(orderId);
-    const product = order ? productRepo.getById(order.product_id) : null;
-    const displayProductName = productName || product?.name || `Order #${orderId}`;
+    // Resolve the product name: either from the fixed dropdown list (when
+    // Micro picked it via /rating) or from the real order record (when
+    // this came from the automatic post-payment rating prompt).
+    let displayProductName;
+    if (productToken === 'auto') {
+      const order = orderRepo.getById(orderId);
+      const product = order ? productRepo.getById(order.product_id) : null;
+      displayProductName = product?.name || `Order #${orderId}`;
+    } else {
+      displayProductName = RATING_PRODUCTS[Number(productToken)] || `Order #${orderId}`;
+    }
 
     const starColor = stars >= 4 ? 0xf6c90e : stars >= 3 ? 0xffa94d : 0xff6b6b;
 
