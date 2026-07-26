@@ -67,9 +67,27 @@ module.exports = {
     const panel = reactionRoleRepo.createPanel(guild.id, channelId, { title, description, color });
     reactionRoleRepo.setPanelMessageId(panel.id, message.id);
 
+    const reactionErrors = [];
     for (const m of parsedMappings) {
       reactionRoleRepo.addMapping(panel.id, { emojiName: m.emojiName, emojiId: m.emojiId, roleId: m.roleId });
-      await message.react(toReactString(m)).catch(() => {});
+      try {
+        await message.react(toReactString(m));
+      } catch (err) {
+        // Surface WHY instead of failing silently — the two most common
+        // causes are: (1) the bot lacks "Add Reactions" permission in this
+        // channel, or (2) the emoji text wasn't a valid unicode emoji or a
+        // real custom emoji from THIS server (custom emoji can only be used
+        // by servers they belong to, or servers with emoji sharing enabled).
+        reactionErrors.push(`${m.emojiName}: ${err.message}`);
+      }
+    }
+
+    if (reactionErrors.length) {
+      const err = new Error(
+        `Panel terkirim, tapi ${reactionErrors.length} emoji gagal ditempel: ${reactionErrors.join('; ')}`
+      );
+      err.partialSuccess = { panel, message };
+      throw err;
     }
 
     return { panel, message };
