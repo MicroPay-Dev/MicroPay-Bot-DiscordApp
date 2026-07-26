@@ -125,4 +125,25 @@ ensureColumn('joki_quest_orders', 'password_discord', 'TEXT');
 ensureColumn('joki_quest_orders', 'backup_code', 'TEXT');
 ensureColumn('joki_quest_orders', 'wiped_at', 'DATETIME');
 
+// Reaction Roles: a "panel" is one embed message posted to a channel;
+// each panel has multiple emoji -> role mappings.
+db.prepare(`CREATE TABLE IF NOT EXISTS reaction_role_panels (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  guild_id TEXT,
+  channel_id TEXT,
+  message_id TEXT,
+  title TEXT,
+  description TEXT,
+  color TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)`).run();
+
+db.prepare(`CREATE TABLE IF NOT EXISTS reaction_role_mappings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  panel_id INTEGER,
+  emoji_name TEXT,
+  emoji_id TEXT,
+  role_id TEXT
+)`).run();
+
 module.exports = db;

@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const { loadCommands } = require('./loadCommands');
 
 function createClient() {
@@ -10,7 +10,12 @@ function createClient() {
       GatewayIntentBits.GuildMembers,
       GatewayIntentBits.GuildMessages,
       GatewayIntentBits.MessageContent,
+      GatewayIntentBits.GuildMessageReactions,
     ],
+    // Reactions/messages on posts made before the bot's last restart arrive
+    // as "partial" objects — these partials let discord.js fetch the full
+    // data on demand instead of silently ignoring the event.
+    partials: [Partials.Message, Partials.Channel, Partials.Reaction, Partials.User],
   });
 
   client.commands = loadCommands();

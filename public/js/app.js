@@ -146,6 +146,7 @@ function renderView() {
     youtube: renderYoutube,
     broadcast: renderBroadcast,
     'quest-update': renderQuestUpdate,
+    'reaction-roles': renderReactionRoles,
     settings: renderSettings,
     logs: renderLogs,
     backups: renderBackups,
@@ -972,6 +973,157 @@ async function renderBotProfile() {
       });
       toast('Profil bot berhasil diperbarui');
       renderBotProfile();
+    } catch (err) {
+      toast('Gagal: ' + err.message, true);
+    }
+  });
+}
+
+
+// ---------- Reaction Roles ----------
+
+let reactionRoleRowCount = 0;
+
+function reactionRoleMappingRowHtml(roles) {
+  const idx = reactionRoleRowCount++;
+  return `
+    <div class="rr-row" data-row-index="${idx}" style="display:flex; gap:0.6rem; align-items:flex-end; margin-top:0.6rem;">
+      <div style="flex:1;">
+        <label>Emoji</label>
+        <input name="rr_emoji_${idx}" placeholder="⭐ atau <:nama:id>">
+      </div>
+      <div style="flex:2;">
+        <label>Role</label>
+        <select name="rr_role_${idx}">
+          <option value="">-- Pilih Role --</option>
+          ${roles.map((r) => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('')}
+        </select>
+      </div>
+      <button type="button" class="btn btn-danger btn-sm rr-remove-row" style="margin-bottom:0.1rem;">✕</button>
+    </div>
+  `;
+}
+
+async function renderReactionRoles() {
+  const channels = state.meta?.channels || [];
+  const roles = state.meta?.roles || [];
+  const panels = await Api.get(`/api/dashboard/guilds/${state.guildId}/reaction-roles`);
+
+  reactionRoleRowCount = 0;
+  const initialRows = [reactionRoleMappingRowHtml(roles), reactionRoleMappingRowHtml(roles)].join('');
+
+  content.innerHTML = `
+    <h1 class="page-title">Reaction Roles</h1>
+    <div class="page-subtitle">// Member klik emoji di pesan untuk otomatis dapat/hapus role</div>
+
+    <div class="hud-panel">
+      <span class="corner-bl"></span><span class="corner-br"></span>
+      <div class="panel-title">Buat Panel Baru</div>
+      <form id="reaction-role-form">
+        <label>Channel Tujuan</label>
+        <select name="channel_id" required>
+          <option value="">-- Pilih Channel --</option>
+          ${channels.map((c) => `<option value="${c.id}">#${escapeHtml(c.name)}</option>`).join('')}
+        </select>
+        <label>Judul Embed</label>
+        <input name="title" placeholder="🎭 Pilih Role Kamu">
+        <label>Deskripsi Embed (opsional)</label>
+        <textarea name="description" rows="2" placeholder="Klik emoji di bawah untuk mendapatkan role sesuai minat kamu!"></textarea>
+        <label>Warna Embed</label>
+        <input name="color" type="color" value="#5865f2">
+
+        <div style="margin-top:1rem; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim);">Pasangan Emoji ↔ Role</div>
+        <div id="rr-mapping-rows">${initialRows}</div>
+        <div style="margin-top:0.8rem;">
+          <button type="button" id="rr-add-row" class="btn btn-ghost btn-sm">+ Tambah Baris</button>
+        </div>
+
+        <div style="margin-top:1.2rem;"><button class="btn" type="submit">🎭 Buat & Kirim Panel</button></div>
+      </form>
+    </div>
+
+    <div class="hud-panel">
+      <span class="corner-bl"></span><span class="corner-br"></span>
+      <div class="panel-title">Panel Aktif (${panels.length})</div>
+      ${
+        panels.length
+          ? `<table><thead><tr><th>Judul</th><th>Channel</th><th>Mappings</th><th></th></tr></thead><tbody>
+              ${panels
+                .map((p) => {
+                  const ch = channels.find((c) => c.id === p.channel_id);
+                  return `<tr>
+                    <td>${escapeHtml(p.title || '(tanpa judul)')}</td>
+                    <td>${ch ? '#' + escapeHtml(ch.name) : '<span class="text-dim">channel dihapus</span>'}</td>
+                    <td class="mono">${p.mappings.length} emoji</td>
+                    <td><button class="btn btn-danger btn-sm" data-delete-panel-id="${p.id}">Hapus</button></td>
+                  </tr>`;
+                })
+                .join('')}
+            </tbody></table>`
+          : `<div class="empty-state">Belum ada panel reaction role.</div>`
+      }
+    </div>
+  `;
+
+  document.getElementById('rr-add-row').addEventListener('click', () => {
+    document.getElementById('rr-mapping-rows').insertAdjacentHTML('beforeend', reactionRoleMappingRowHtml(roles));
+    wireRemoveButtons();
+  });
+
+  function wireRemoveButtons() {
+    document.querySelectorAll('.rr-remove-row').forEach((btn) => {
+      btn.onclick = () => btn.closest('.rr-row').remove();
+    });
+  }
+  wireRemoveButtons();
+
+  document.querySelectorAll('[data-delete-panel-id]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const panelId = btn.getAttribute('data-delete-panel-id');
+      if (!confirm('Yakin ingin menghapus panel ini? Pesan di Discord juga akan dihapus.')) return;
+      try {
+        await Api.delete(`/api/dashboard/guilds/${state.guildId}/reaction-roles/${panelId}`);
+        toast('Panel berhasil dihapus');
+        renderReactionRoles();
+      } catch (err) {
+        toast('Gagal: ' + err.message, true);
+      }
+    });
+  });
+
+  document.getElementById('reaction-role-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const channelId = form.querySelector('[name="channel_id"]').value;
+    if (!channelId) {
+      toast('Pilih channel tujuan terlebih dahulu', true);
+      return;
+    }
+
+    const mappings = [];
+    document.querySelectorAll('.rr-row').forEach((row) => {
+      const emojiInput = row.querySelector('input[name^="rr_emoji_"]');
+      const roleSelect = row.querySelector('select[name^="rr_role_"]');
+      const emoji = emojiInput?.value.trim();
+      const roleId = roleSelect?.value;
+      if (emoji && roleId) mappings.push({ emoji, role_id: roleId });
+    });
+
+    if (!mappings.length) {
+      toast('Isi minimal 1 pasangan emoji + role', true);
+      return;
+    }
+
+    try {
+      await Api.post(`/api/dashboard/guilds/${state.guildId}/reaction-roles`, {
+        channel_id: channelId,
+        title: form.querySelector('[name="title"]').value,
+        description: form.querySelector('[name="description"]').value,
+        color: form.querySelector('[name="color"]').value,
+        mappings,
+      });
+      toast('Panel reaction role berhasil dibuat dan dikirim');
+      renderReactionRoles();
     } catch (err) {
       toast('Gagal: ' + err.message, true);
     }

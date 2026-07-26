@@ -13,6 +13,8 @@ const youtubeVideoRepo = require('../repositories/youtubeVideoRepo');
 const AnalyticsService = require('../services/AnalyticsService');
 const BackupService = require('../services/BackupService');
 const ProductService = require('../services/ProductService');
+const ReactionRoleService = require('../services/ReactionRoleService');
+const reactionRoleRepo = require('../repositories/reactionRoleRepo');
 const { isDeveloper } = require('../utils/developer');
 const { REST, Routes } = require('discord.js');
 
@@ -615,6 +617,48 @@ router.get('/backups/:filename/download', requireDeveloper, (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="${req.params.filename}"`);
   res.setHeader('Content-Type', 'application/octet-stream');
   fs.createReadStream(filePath).pipe(res);
+});
+
+// --- REACTION ROLES ---
+
+router.get('/guilds/:guildId/reaction-roles', (req, res) => {
+  const panels = reactionRoleRepo.listPanelsByGuild(req.params.guildId);
+  res.json(panels);
+});
+
+router.post('/guilds/:guildId/reaction-roles', async (req, res) => {
+  const guild = discordClient?.guilds.cache.get(req.params.guildId);
+  if (!guild) return res.status(404).json({ error: 'Bot belum bergabung ke server ini.' });
+
+  const { channel_id, title, description, color, mappings } = req.body;
+
+  if (!channel_id) return res.status(400).json({ error: 'Channel wajib dipilih.' });
+  if (!Array.isArray(mappings) || !mappings.length) {
+    return res.status(400).json({ error: 'Minimal 1 pasangan emoji + role wajib diisi.' });
+  }
+
+  try {
+    const result = await ReactionRoleService.createPanel(guild, {
+      channelId: channel_id,
+      title,
+      description,
+      color,
+      mappings: mappings.map((m) => ({ emojiInput: m.emoji, roleId: m.role_id })),
+    });
+    res.json({ success: true, panelId: result.panel.id, messageId: result.message.id });
+  } catch (err) {
+    res.status(400).json({ error: 'Gagal membuat panel: ' + err.message });
+  }
+});
+
+router.delete('/guilds/:guildId/reaction-roles/:panelId', async (req, res) => {
+  const guild = discordClient?.guilds.cache.get(req.params.guildId);
+  if (!guild) return res.status(404).json({ error: 'Bot belum bergabung ke server ini.' });
+
+  const deleted = await ReactionRoleService.deletePanel(guild, Number(req.params.panelId));
+  if (!deleted) return res.status(404).json({ error: 'Panel tidak ditemukan.' });
+
+  res.json({ success: true });
 });
 
 // --- SUPPORT PANEL (post the "Buka Ticket Support" embed+button to a channel) ---
