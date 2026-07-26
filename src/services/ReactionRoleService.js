@@ -13,10 +13,14 @@ function parseEmojiInput(input) {
   return { emojiName: trimmed, emojiId: null };
 }
 
-// Converts a stored mapping back into the string discord.js's
-// message.react() expects.
+// Converts a mapping back into the string discord.js's message.react()
+// expects. Accepts either camelCase (emojiName/emojiId, as used right
+// after parseEmojiInput) or snake_case (emoji_name/emoji_id, matching the
+// DB row shape) so it works no matter which one is passed in.
 function toReactString(mapping) {
-  return mapping.emoji_id ? `${mapping.emoji_name}:${mapping.emoji_id}` : mapping.emoji_name;
+  const name = mapping.emojiName ?? mapping.emoji_name;
+  const id = mapping.emojiId ?? mapping.emoji_id;
+  return id ? `${name}:${id}` : name;
 }
 
 module.exports = {
