@@ -65,6 +65,20 @@ async function createTicketChannel(guild, user, type) {
 }
 
 module.exports = {
+  /**
+   * Only the server owner or someone with the configured Admin role may
+   * close a ticket — NOT the ticket's own opener, and not just anyone with
+   * generic channel access.
+   */
+  canCloseTicket(guild, member) {
+    if (guild.ownerId === member.id) return true;
+
+    const settings = settingsRepo.get(guild.id);
+    if (settings?.admin_role && member.roles.cache.has(settings.admin_role)) return true;
+
+    return false;
+  },
+
   createOrderTicket(guild, user) {
     return createTicketChannel(guild, user, 'order');
   },
