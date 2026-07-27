@@ -636,18 +636,21 @@ router.post('/guilds/:guildId/broadcast-plain', async (req, res) => {
   if (!channel || !channel.isTextBased()) return res.status(400).json({ error: 'Channel tidak valid.' });
 
   try {
-    // A single Discord message can contain UP TO 10 embeds, rendered
-    // stacked top-to-bottom in the exact order given — so text, image,
-    // and text can each be their own embed within ONE message, preserving
-    // the exact "teks -> gambar -> teks" order while still letting BOTH
-    // text blocks use their embed's description (which, unlike a footer,
-    // fully supports channel tags/@mentions/markdown).
-    const embeds = [];
-    if (text_before) embeds.push(new EmbedBuilder().setColor(0x5865f2).setDescription(text_before));
-    if (image_url) embeds.push(new EmbedBuilder().setColor(0x5865f2).setImage(image_url));
-    if (text_after) embeds.push(new EmbedBuilder().setColor(0x5865f2).setDescription(text_after));
+    // ONE bordered embed box (text_before as description, image as the
+    // embed image) — this is the only combination Discord allows within a
+    // single embed while keeping mention support, since the only slot
+    // BELOW the image inside an embed is the footer, which never parses
+    // channel tags/@mentions. So text_after is sent as a plain trailing
+    // message instead: it has no border/box of its own (unlike a second
+    // embed), so it reads as a natural continuation under the embed
+    // rather than a second separate box, while keeping tags clickable.
+    const embed = new EmbedBuilder().setColor(0x5865f2);
+    if (text_before) embed.setDescription(text_before);
+    if (image_url) embed.setImage(image_url);
 
-    await channel.send({ embeds });
+    if (text_before || image_url) await channel.send({ embeds: [embed] });
+    if (text_after) await channel.send({ content: text_after });
+
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Gagal mengirim broadcast: ' + err.message });
