@@ -440,6 +440,7 @@ async function renderYoutube() {
 
 async function renderBroadcast() {
   const channels = state.meta?.channels || [];
+  const broadcastTemplates = await Api.get(`/api/dashboard/guilds/${state.guildId}/broadcast-templates`);
 
   content.innerHTML = `
     <h1 class="page-title">Broadcast</h1>
@@ -476,6 +477,53 @@ async function renderBroadcast() {
         <div style="margin-top:1.2rem;"><button class="btn" type="submit">📨 Kirim Sekarang</button></div>
       </form>
     </div>
+
+    <div class="hud-panel">
+      <span class="corner-bl"></span><span class="corner-br"></span>
+      <div class="panel-title">📄 Broadcast Tanpa Embed (Teks → Gambar → Teks)</div>
+      <form id="broadcast-plain-form">
+        <label>Channel Tujuan</label>
+        <select name="channel_id" required>
+          <option value="">-- Pilih Channel --</option>
+          ${channels.map((c) => `<option value="${c.id}">#${escapeHtml(c.name)}</option>`).join('')}
+        </select>
+
+        <label>Teks Sebelum Gambar (opsional)</label>
+        <textarea name="text_before" rows="2" placeholder="Contoh: Cek promo terbaru kami!"></textarea>
+
+        <label>URL Gambar (opsional)</label>
+        <input name="image_url" placeholder="https://...">
+
+        <label>Teks Setelah Gambar (opsional)</label>
+        <textarea name="text_after" rows="2" placeholder="Contoh: Order sekarang lewat /dashboard!"></textarea>
+
+        <div style="margin-top:1.2rem; display:flex; gap:0.6rem; flex-wrap:wrap;">
+          <button class="btn" type="submit">📨 Kirim Sekarang</button>
+          <button type="button" id="broadcast-plain-save-btn" class="btn btn-ghost">💾 Simpan sebagai Template</button>
+        </div>
+      </form>
+
+      <div style="margin-top:1.5rem;">
+        <div class="panel-title">Template Tersimpan (${broadcastTemplates.length})</div>
+        ${
+          broadcastTemplates.length
+            ? `<table><thead><tr><th>Nama</th><th></th></tr></thead><tbody>
+                ${broadcastTemplates
+                  .map(
+                    (t) => `<tr>
+                  <td>${escapeHtml(t.name)}</td>
+                  <td style="white-space:nowrap;">
+                    <button type="button" class="btn btn-sm" data-load-template-id="${t.id}">Muat</button>
+                    <button type="button" class="btn btn-danger btn-sm" data-delete-template-id="${t.id}">Hapus</button>
+                  </td>
+                </tr>`
+                  )
+                  .join('')}
+              </tbody></table>`
+            : `<div class="empty-state">Belum ada template tersimpan.</div>`
+        }
+      </div>
+    </div>
   `;
 
   document.getElementById('broadcast-form').addEventListener('submit', async (e) => {
@@ -502,6 +550,82 @@ async function renderBroadcast() {
     } catch (err) {
       toast('Gagal: ' + err.message, true);
     }
+  });
+
+  const plainForm = document.getElementById('broadcast-plain-form');
+
+  plainForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const channelId = fd.get('channel_id');
+    if (!channelId) {
+      toast('Pilih channel tujuan terlebih dahulu', true);
+      return;
+    }
+    const textBefore = fd.get('text_before');
+    const imageUrl = fd.get('image_url');
+    const textAfter = fd.get('text_after');
+    if (!textBefore && !imageUrl && !textAfter) {
+      toast('Isi minimal salah satu: teks atau gambar', true);
+      return;
+    }
+
+    try {
+      await Api.post(`/api/dashboard/guilds/${state.guildId}/broadcast-plain`, {
+        channel_id: channelId,
+        text_before: textBefore,
+        image_url: imageUrl,
+        text_after: textAfter,
+      });
+      toast('Broadcast berhasil dikirim');
+    } catch (err) {
+      toast('Gagal: ' + err.message, true);
+    }
+  });
+
+  document.getElementById('broadcast-plain-save-btn').addEventListener('click', async () => {
+    const name = prompt('Nama template ini:');
+    if (!name) return;
+
+    const fd = new FormData(plainForm);
+    try {
+      await Api.post(`/api/dashboard/guilds/${state.guildId}/broadcast-templates`, {
+        name,
+        text_before: fd.get('text_before'),
+        image_url: fd.get('image_url'),
+        text_after: fd.get('text_after'),
+      });
+      toast('Template berhasil disimpan');
+      renderBroadcast();
+    } catch (err) {
+      toast('Gagal: ' + err.message, true);
+    }
+  });
+
+  document.querySelectorAll('[data-load-template-id]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = Number(btn.getAttribute('data-load-template-id'));
+      const template = broadcastTemplates.find((t) => t.id === id);
+      if (!template) return;
+      plainForm.querySelector('[name="text_before"]').value = template.text_before || '';
+      plainForm.querySelector('[name="image_url"]').value = template.image_url || '';
+      plainForm.querySelector('[name="text_after"]').value = template.text_after || '';
+      toast(`Template "${template.name}" dimuat ke form`);
+    });
+  });
+
+  document.querySelectorAll('[data-delete-template-id]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-delete-template-id');
+      if (!confirm('Yakin ingin menghapus template ini?')) return;
+      try {
+        await Api.delete(`/api/dashboard/guilds/${state.guildId}/broadcast-templates/${id}`);
+        toast('Template berhasil dihapus');
+        renderBroadcast();
+      } catch (err) {
+        toast('Gagal: ' + err.message, true);
+      }
+    });
   });
 }
 

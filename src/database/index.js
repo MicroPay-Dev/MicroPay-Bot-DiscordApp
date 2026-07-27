@@ -146,4 +146,16 @@ db.prepare(`CREATE TABLE IF NOT EXISTS reaction_role_mappings (
   role_id TEXT
 )`).run();
 
+// Saved Broadcast (no-embed) templates: text -> image -> text, reusable
+// without retyping everything each time.
+db.prepare(`CREATE TABLE IF NOT EXISTS broadcast_templates (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  guild_id TEXT,
+  name TEXT,
+  text_before TEXT,
+  image_url TEXT,
+  text_after TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)`).run();
+
 module.exports = db;

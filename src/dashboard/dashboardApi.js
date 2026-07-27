@@ -15,6 +15,7 @@ const BackupService = require('../services/BackupService');
 const ProductService = require('../services/ProductService');
 const ReactionRoleService = require('../services/ReactionRoleService');
 const reactionRoleRepo = require('../repositories/reactionRoleRepo');
+const broadcastTemplateRepo = require('../repositories/broadcastTemplateRepo');
 const { isDeveloper } = require('../utils/developer');
 const { REST, Routes } = require('discord.js');
 
@@ -617,6 +618,68 @@ router.get('/backups/:filename/download', requireDeveloper, (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="${req.params.filename}"`);
   res.setHeader('Content-Type', 'application/octet-stream');
   fs.createReadStream(filePath).pipe(res);
+});
+
+// --- BROADCAST (PLAIN, NO EMBED): text -> image -> text, in that order ---
+
+router.post('/guilds/:guildId/broadcast-plain', async (req, res) => {
+  const guild = discordClient?.guilds.cache.get(req.params.guildId);
+  if (!guild) return res.status(404).json({ error: 'Bot belum bergabung ke server ini.' });
+
+  const { channel_id, text_before, image_url, text_after } = req.body;
+  if (!channel_id) return res.status(400).json({ error: 'Channel wajib dipilih.' });
+  if (!text_before && !image_url && !text_after) {
+    return res.status(400).json({ error: 'Isi minimal salah satu: teks awal, gambar, atau teks akhir.' });
+  }
+
+  const channel = guild.channels.cache.get(channel_id);
+  if (!channel || !channel.isTextBased()) return res.status(400).json({ error: 'Channel tidak valid.' });
+
+  try {
+    // Sent as separate sequential messages (not a single embed) so the
+    // order is exactly: text, then image, then text.
+    if (text_before) await channel.send({ content: text_before });
+    if (image_url) await channel.send({ files: [image_url] });
+    if (text_after) await channel.send({ content: text_after });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Gagal mengirim broadcast: ' + err.message });
+  }
+});
+
+// --- BROADCAST TEMPLATES (saved text/image/text presets, reusable) ---
+
+router.get('/guilds/:guildId/broadcast-templates', (req, res) => {
+  res.json(broadcastTemplateRepo.listByGuild(req.params.guildId));
+});
+
+router.post('/guilds/:guildId/broadcast-templates', (req, res) => {
+  const { name, text_before, image_url, text_after } = req.body;
+  if (!name) return res.status(400).json({ error: 'Nama template wajib diisi.' });
+
+  const template = broadcastTemplateRepo.create(req.params.guildId, {
+    name,
+    textBefore: text_before,
+    imageUrl: image_url,
+    textAfter: text_after,
+  });
+  res.json(template);
+});
+
+router.put('/guilds/:guildId/broadcast-templates/:templateId', (req, res) => {
+  const { name, text_before, image_url, text_after } = req.body;
+  const template = broadcastTemplateRepo.update(Number(req.params.templateId), {
+    name,
+    textBefore: text_before,
+    imageUrl: image_url,
+    textAfter: text_after,
+  });
+  res.json(template);
+});
+
+router.delete('/guilds/:guildId/broadcast-templates/:templateId', (req, res) => {
+  broadcastTemplateRepo.delete(Number(req.params.templateId));
+  res.json({ success: true });
 });
 
 // --- REACTION ROLES ---
