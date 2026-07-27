@@ -636,20 +636,18 @@ router.post('/guilds/:guildId/broadcast-plain', async (req, res) => {
   if (!channel || !channel.isTextBased()) return res.status(400).json({ error: 'Channel tidak valid.' });
 
   try {
-    // Discord embeds ONLY parse mentions/markdown (channel tags, @mentions,
-    // bold, etc) inside the description and field values — the footer is
-    // always rendered as plain literal text, with no mention parsing at
-    // all. Since Micro needs working channel tags, both text blocks are
-    // combined into the description (which does support them); the image
-    // still always renders below all text either way, per Discord's fixed
-    // embed layout (description -> fields -> image -> footer).
-    const embed = new EmbedBuilder().setColor(0x5865f2);
+    // A single Discord message can contain UP TO 10 embeds, rendered
+    // stacked top-to-bottom in the exact order given — so text, image,
+    // and text can each be their own embed within ONE message, preserving
+    // the exact "teks -> gambar -> teks" order while still letting BOTH
+    // text blocks use their embed's description (which, unlike a footer,
+    // fully supports channel tags/@mentions/markdown).
+    const embeds = [];
+    if (text_before) embeds.push(new EmbedBuilder().setColor(0x5865f2).setDescription(text_before));
+    if (image_url) embeds.push(new EmbedBuilder().setColor(0x5865f2).setImage(image_url));
+    if (text_after) embeds.push(new EmbedBuilder().setColor(0x5865f2).setDescription(text_after));
 
-    const descriptionParts = [text_before, text_after].filter(Boolean);
-    if (descriptionParts.length) embed.setDescription(descriptionParts.join('\n\n'));
-    if (image_url) embed.setImage(image_url);
-
-    await channel.send({ embeds: [embed] });
+    await channel.send({ embeds });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Gagal mengirim broadcast: ' + err.message });
