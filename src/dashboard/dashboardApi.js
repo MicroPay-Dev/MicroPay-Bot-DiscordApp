@@ -636,10 +636,14 @@ router.post('/guilds/:guildId/broadcast-plain', async (req, res) => {
   if (!channel || !channel.isTextBased()) return res.status(400).json({ error: 'Channel tidak valid.' });
 
   try {
-    // Sent as separate sequential messages (not a single embed) so the
-    // order is exactly: text, then image, then text.
+    // Sent as separate sequential messages so the order is exactly: text,
+    // then image, then text. The image step is displayed as an embed
+    // (image-only, no title/description) rather than a raw attachment.
     if (text_before) await channel.send({ content: text_before });
-    if (image_url) await channel.send({ files: [image_url] });
+    if (image_url) {
+      const imageEmbed = new EmbedBuilder().setImage(image_url);
+      await channel.send({ embeds: [imageEmbed] });
+    }
     if (text_after) await channel.send({ content: text_after });
     res.json({ success: true });
   } catch (err) {
