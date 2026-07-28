@@ -636,19 +636,16 @@ router.post('/guilds/:guildId/broadcast-plain', async (req, res) => {
   if (!channel || !channel.isTextBased()) return res.status(400).json({ error: 'Channel tidak valid.' });
 
   try {
-    // ONE bordered embed box (text_before as description, image as the
-    // embed image) — this is the only combination Discord allows within a
-    // single embed while keeping mention support, since the only slot
-    // BELOW the image inside an embed is the footer, which never parses
-    // channel tags/@mentions. So text_after is sent as a plain trailing
-    // message instead: it has no border/box of its own (unlike a second
-    // embed), so it reads as a natural continuation under the embed
-    // rather than a second separate box, while keeping tags clickable.
-    const embed = new EmbedBuilder().setColor(0x5865f2);
-    if (text_before) embed.setDescription(text_before);
-    if (image_url) embed.setImage(image_url);
-
-    if (text_before || image_url) await channel.send({ embeds: [embed] });
+    // No embed at all (plain messages), sent back-to-back: text, then the
+    // image as a raw attachment, then text. Plain messages have no
+    // bordered box, so — unlike embeds — there's nothing to visually
+    // "separate" between the 3 parts; Discord also groups consecutive
+    // messages from the same bot sent close together (no repeated
+    // avatar/name), so this reads as one continuous flow. This also keeps
+    // full markdown support (spoilers ||text||, mentions, bold, etc) in
+    // both text parts, since it's normal message content.
+    if (text_before) await channel.send({ content: text_before });
+    if (image_url) await channel.send({ files: [image_url] });
     if (text_after) await channel.send({ content: text_after });
 
     res.json({ success: true });
