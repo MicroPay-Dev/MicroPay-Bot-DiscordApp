@@ -626,7 +626,7 @@ router.post('/guilds/:guildId/broadcast-plain', async (req, res) => {
   const guild = discordClient?.guilds.cache.get(req.params.guildId);
   if (!guild) return res.status(404).json({ error: 'Bot belum bergabung ke server ini.' });
 
-  const { channel_id, text_before, image_url, text_after } = req.body;
+  const { channel_id, text_before, image_url, text_after, button_channel_id } = req.body;
   if (!channel_id) return res.status(400).json({ error: 'Channel wajib dipilih.' });
   if (!text_before && !image_url && !text_after) {
     return res.status(400).json({ error: 'Isi minimal salah satu: teks awal, gambar, atau teks akhir.' });
@@ -636,18 +636,30 @@ router.post('/guilds/:guildId/broadcast-plain', async (req, res) => {
   if (!channel || !channel.isTextBased()) return res.status(400).json({ error: 'Channel tidak valid.' });
 
   try {
-    // No embed at all (plain messages), sent back-to-back: text, then the
-    // image as a raw attachment, then text. Plain messages have no
-    // bordered box, so — unlike embeds — there's nothing to visually
-    // "separate" between the 3 parts; Discord also groups consecutive
-    // messages from the same bot sent close together (no repeated
-    // avatar/name), so this reads as one continuous flow. This also keeps
-    // full markdown support (spoilers ||text||, mentions, bold, etc) in
-    // both text parts, since it's normal message content.
-    if (text_before) await channel.send({ content: text_before });
-    if (image_url) await channel.send({ files: [image_url] });
-    if (text_after) await channel.send({ content: text_after });
+    // ONE combined embed: text_before as description (renders above the
+    // image), image_url as the embed image, text_after as the footer
+    // (renders below the image) — this keeps everything in a single
+    // bordered box, in the same text -> image -> text order. A real Link
+    // button below points straight at the target channel, which is more
+    // reliable than a text-based channel tag anyway.
+    const embed = new EmbedBuilder().setColor(0x5865f2);
+    if (text_before) embed.setDescription(text_before);
+    if (image_url) embed.setImage(image_url);
+    if (text_after) embed.setFooter({ text: text_after });
 
+    const payload = { embeds: [embed] };
+
+    if (button_channel_id) {
+      const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setLabel('ORDER HERE')
+          .setStyle(ButtonStyle.Link)
+          .setURL(`https://discord.com/channels/${guild.id}/${button_channel_id}`)
+      );
+      payload.components = [row];
+    }
+
+    await channel.send(payload);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Gagal mengirim broadcast: ' + err.message });

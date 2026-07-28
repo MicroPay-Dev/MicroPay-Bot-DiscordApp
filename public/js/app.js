@@ -494,8 +494,14 @@ async function renderBroadcast() {
         <label>URL Gambar (opsional)</label>
         <input name="image_url" placeholder="https://...">
 
-        <label>Teks Setelah Gambar (opsional)</label>
+        <label>Teks Setelah Gambar (opsional, tampil sebagai footer di bawah gambar)</label>
         <textarea name="text_after" rows="2" placeholder="Contoh: Order sekarang lewat /dashboard!"></textarea>
+
+        <label>Channel Tujuan Tombol "ORDER HERE" (opsional)</label>
+        <select name="button_channel_id">
+          <option value="">-- Tanpa tombol --</option>
+          ${channels.map((c) => `<option value="${c.id}">#${escapeHtml(c.name)}</option>`).join('')}
+        </select>
 
         <div style="margin-top:1.2rem; display:flex; gap:0.6rem; flex-wrap:wrap;">
           <button class="btn" type="submit">📨 Kirim Sekarang</button>
@@ -576,6 +582,7 @@ async function renderBroadcast() {
         text_before: textBefore,
         image_url: imageUrl,
         text_after: textAfter,
+        button_channel_id: fd.get('button_channel_id') || null,
       });
       toast('Broadcast berhasil dikirim');
     } catch (err) {
