@@ -141,6 +141,7 @@ function renderView() {
   const renderers = {
     overview: renderOverview,
     products: renderProducts,
+    'catalog-manage': renderCatalogManage,
     orders: renderOrders,
     payments: renderPayments,
     youtube: renderYoutube,
@@ -1258,5 +1259,136 @@ async function renderReactionRoles() {
     } catch (err) {
       toast('Gagal: ' + err.message, true);
     }
+  });
+}
+
+
+// ---------- Catalog Manage (2-tier: Products -> Variants) ----------
+
+async function renderCatalogManage() {
+  const products = await Api.get(`/api/dashboard/guilds/${state.guildId}/catalog-products`);
+  const variantsByProduct = await Promise.all(
+    products.map((p) => Api.get(`/api/dashboard/catalog-products/${p.id}/variants`))
+  );
+  products.forEach((p, i) => (p.variants = variantsByProduct[i]));
+
+  const activeProducts = products.filter((p) => p.active);
+
+  content.innerHTML = `
+    <h1 class="page-title">Katalog (Produk &amp; Varian)</h1>
+    <div class="page-subtitle">// Produk = kategori dengan deskripsi. Varian = pilihan yang bisa dibeli dengan harga masing-masing.</div>
+
+    <div class="hud-panel">
+      <span class="corner-bl"></span><span class="corner-br"></span>
+      <div class="panel-title">Tambah Produk Baru</div>
+      <form id="catalog-product-form">
+        <label>Nama Produk</label>
+        <input name="name" placeholder="Contoh: NICHROO" required>
+        <label>Deskripsi Produk</label>
+        <textarea name="description" rows="3" placeholder="Deskripsi yang muncul saat member klik produk ini di 'PILIH KATEGORI PRODUK'"></textarea>
+        <div style="margin-top:1.2rem;"><button class="btn" type="submit">+ Tambah Produk</button></div>
+      </form>
+    </div>
+
+    ${activeProducts
+      .map(
+        (p) => `
+      <div class="hud-panel" data-product-id="${p.id}">
+        <span class="corner-bl"></span><span class="corner-br"></span>
+        <div class="panel-title">${escapeHtml(p.name)}</div>
+        <div style="color:var(--text-dim); font-size:0.85rem; margin-bottom:0.8rem;">${escapeHtml(p.description || '(tanpa deskripsi)')}</div>
+        <button type="button" class="btn btn-danger btn-sm" data-delete-product-id="${p.id}">Hapus Produk Ini</button>
+
+        <div style="margin-top:1rem; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim);">Varian</div>
+        ${
+          p.variants.length
+            ? `<table><thead><tr><th>Nama Varian</th><th>Harga</th><th></th></tr></thead><tbody>
+                ${p.variants
+                  .map(
+                    (v) => `<tr>
+                  <td>${escapeHtml(v.name)}</td>
+                  <td class="mono text-cyan">${fmtRupiah(v.price)}</td>
+                  <td><button type="button" class="btn btn-danger btn-sm" data-delete-variant-id="${v.id}">Hapus</button></td>
+                </tr>`
+                  )
+                  .join('')}
+              </tbody></table>`
+            : `<div class="empty-state" style="padding:1rem;">Belum ada varian.</div>`
+        }
+
+        <form class="variant-add-form" data-product-id="${p.id}" style="margin-top:0.8rem; display:flex; gap:0.6rem; align-items:flex-end; flex-wrap:wrap;">
+          <div style="flex:2;">
+            <label>Nama Varian</label>
+            <input name="variant_name" placeholder="Contoh: 1 Bulan" required>
+          </div>
+          <div style="flex:1;">
+            <label>Harga (Rp)</label>
+            <input name="variant_price" type="number" min="0" required>
+          </div>
+          <button class="btn btn-sm" type="submit">+ Tambah Varian</button>
+        </form>
+      </div>
+    `
+      )
+      .join('')}
+  `;
+
+  document.getElementById('catalog-product-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    try {
+      await Api.post(`/api/dashboard/guilds/${state.guildId}/catalog-products`, {
+        name: fd.get('name'),
+        description: fd.get('description'),
+      });
+      toast('Produk berhasil ditambahkan');
+      renderCatalogManage();
+    } catch (err) {
+      toast('Gagal: ' + err.message, true);
+    }
+  });
+
+  document.querySelectorAll('.variant-add-form').forEach((form) => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const productId = form.getAttribute('data-product-id');
+      const fd = new FormData(form);
+      try {
+        await Api.post(`/api/dashboard/guilds/${state.guildId}/catalog-products/${productId}/variants`, {
+          name: fd.get('variant_name'),
+          price: fd.get('variant_price'),
+        });
+        toast('Varian berhasil ditambahkan');
+        renderCatalogManage();
+      } catch (err) {
+        toast('Gagal: ' + err.message, true);
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-delete-product-id]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Yakin ingin menghapus produk ini beserta semua variannya dari katalog?')) return;
+      try {
+        await Api.delete(`/api/dashboard/catalog-products/${btn.getAttribute('data-delete-product-id')}`);
+        toast('Produk berhasil dihapus');
+        renderCatalogManage();
+      } catch (err) {
+        toast('Gagal: ' + err.message, true);
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-delete-variant-id]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Yakin ingin menghapus varian ini?')) return;
+      try {
+        await Api.delete(`/api/dashboard/catalog-variants/${btn.getAttribute('data-delete-variant-id')}`);
+        toast('Varian berhasil dihapus');
+        renderCatalogManage();
+      } catch (err) {
+        toast('Gagal: ' + err.message, true);
+      }
+    });
   });
 }

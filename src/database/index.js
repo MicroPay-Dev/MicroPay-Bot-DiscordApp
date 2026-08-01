@@ -158,4 +158,31 @@ db.prepare(`CREATE TABLE IF NOT EXISTS broadcast_templates (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 )`).run();
 
+// New 2-tier catalog system: a "catalog product" is a browsable category
+// (e.g. "NICHROO") with just a name + description — informational only,
+// not directly purchasable. Each product has one or more "variants" (e.g.
+// "1 Bulan - Rp50.000"), which ARE purchasable and each carry their own
+// price + delivery content. This is intentionally separate from the older
+// flat "products" table (still used by the existing order-ticket/catalog
+// broadcast flow) to avoid destabilizing that already-working system.
+db.prepare(`CREATE TABLE IF NOT EXISTS catalog_products (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  guild_id TEXT,
+  name TEXT,
+  description TEXT,
+  active INTEGER DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)`).run();
+
+db.prepare(`CREATE TABLE IF NOT EXISTS catalog_variants (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  guild_id TEXT,
+  product_id INTEGER,
+  name TEXT,
+  price INTEGER,
+  delivery_content TEXT,
+  active INTEGER DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)`).run();
+
 module.exports = db;

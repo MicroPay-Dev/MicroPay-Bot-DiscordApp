@@ -16,6 +16,8 @@ const ProductService = require('../services/ProductService');
 const ReactionRoleService = require('../services/ReactionRoleService');
 const reactionRoleRepo = require('../repositories/reactionRoleRepo');
 const broadcastTemplateRepo = require('../repositories/broadcastTemplateRepo');
+const catalogProductRepo = require('../repositories/catalogProductRepo');
+const catalogVariantRepo = require('../repositories/catalogVariantRepo');
 const { isDeveloper } = require('../utils/developer');
 const { REST, Routes } = require('discord.js');
 
@@ -618,6 +620,54 @@ router.get('/backups/:filename/download', requireDeveloper, (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="${req.params.filename}"`);
   res.setHeader('Content-Type', 'application/octet-stream');
   fs.createReadStream(filePath).pipe(res);
+});
+
+// --- CATALOG PRODUCTS (top-level, browsable, with description) ---
+
+router.get('/guilds/:guildId/catalog-products', (req, res) => {
+  res.json(catalogProductRepo.listAll(req.params.guildId));
+});
+
+router.post('/guilds/:guildId/catalog-products', (req, res) => {
+  const { name, description } = req.body;
+  if (!name) return res.status(400).json({ error: 'Nama produk wajib diisi.' });
+  res.json(catalogProductRepo.create(req.params.guildId, { name, description }));
+});
+
+router.put('/catalog-products/:productId', (req, res) => {
+  const { name, description } = req.body;
+  res.json(catalogProductRepo.update(Number(req.params.productId), { name, description }));
+});
+
+router.delete('/catalog-products/:productId', (req, res) => {
+  res.json(catalogProductRepo.disable(Number(req.params.productId)));
+});
+
+// --- CATALOG VARIANTS (purchasable, priced, belongs to a product) ---
+
+router.get('/catalog-products/:productId/variants', (req, res) => {
+  res.json(catalogVariantRepo.listByProduct(Number(req.params.productId)));
+});
+
+router.post('/guilds/:guildId/catalog-products/:productId/variants', (req, res) => {
+  const { name, price, delivery_content } = req.body;
+  if (!name || !price) return res.status(400).json({ error: 'Nama dan harga varian wajib diisi.' });
+  res.json(
+    catalogVariantRepo.create(req.params.guildId, Number(req.params.productId), {
+      name,
+      price,
+      deliveryContent: delivery_content,
+    })
+  );
+});
+
+router.put('/catalog-variants/:variantId', (req, res) => {
+  const { name, price, delivery_content } = req.body;
+  res.json(catalogVariantRepo.update(Number(req.params.variantId), { name, price, deliveryContent: delivery_content }));
+});
+
+router.delete('/catalog-variants/:variantId', (req, res) => {
+  res.json(catalogVariantRepo.disable(Number(req.params.variantId)));
 });
 
 // --- BROADCAST (PLAIN, NO EMBED): text -> image -> text, in that order ---
