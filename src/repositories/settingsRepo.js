@@ -124,6 +124,15 @@ module.exports = {
     ).run(enabled ? 1 : 0, channelId || null, roleId || null, guildId);
   },
 
+  setOrderDone(guildId, { channelId, message }) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET orderdone_channel = ?, orderdone_message = ? WHERE guild_id = ?`).run(
+      channelId || null,
+      message || null,
+      guildId
+    );
+  },
+
   setTicketCategories(guildId, { orderCategory, supportCategory }) {
     this.ensure(guildId);
     db.prepare(`UPDATE settings SET order_category = ?, support_category = ? WHERE guild_id = ?`).run(

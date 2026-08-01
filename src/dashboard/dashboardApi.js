@@ -298,9 +298,18 @@ router.put('/guilds/:guildId/settings', (req, res) => {
     quest_feed_collectible_role,
     order_category,
     support_category,
+    orderdone_channel,
+    orderdone_message,
   } = req.body;
 
   settingsRepo.ensure(guildId);
+  if (orderdone_channel !== undefined || orderdone_message !== undefined) {
+    const current = settingsRepo.get(guildId);
+    settingsRepo.setOrderDone(guildId, {
+      channelId: orderdone_channel !== undefined ? orderdone_channel : current.orderdone_channel,
+      message: orderdone_message !== undefined ? orderdone_message : current.orderdone_message,
+    });
+  }
   if (order_category !== undefined || support_category !== undefined) {
     const current = settingsRepo.get(guildId);
     settingsRepo.setTicketCategories(guildId, {

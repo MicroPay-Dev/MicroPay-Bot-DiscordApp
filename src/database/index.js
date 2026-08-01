@@ -81,6 +81,8 @@ ensureColumn('settings', 'quest_feed_enabled', 'INTEGER DEFAULT 0');
 ensureColumn('settings', 'quest_feed_channel', 'TEXT');
 ensureColumn('settings', 'order_category', 'TEXT');
 ensureColumn('settings', 'support_category', 'TEXT');
+ensureColumn('settings', 'orderdone_channel', 'TEXT');
+ensureColumn('settings', 'orderdone_message', 'TEXT');
 ensureColumn('settings', 'quest_feed_quest_enabled', 'INTEGER DEFAULT 0');
 ensureColumn('settings', 'quest_feed_quest_channel', 'TEXT');
 ensureColumn('settings', 'quest_feed_collectible_enabled', 'INTEGER DEFAULT 0');

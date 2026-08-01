@@ -881,6 +881,15 @@ async function renderSettings() {
             Buat 2 kategori channel berbeda di server Discord kamu (misal "🛒 ORDER" dan "🎫 SUPPORT"), lalu pilih di sini. Ticket order dan ticket support akan otomatis dibuat di kategori masing-masing.
           </div>
         </div>
+
+        <div class="hud-panel">
+          <span class="corner-bl"></span><span class="corner-br"></span>
+          <div class="panel-title">✅ Notifikasi /orderdone</div>
+          <label>Channel Notifikasi</label>
+          <select name="orderdone_channel">${channelOptions(settings.orderdone_channel)}</select>
+          <label>Template Pesan (gunakan {user} untuk tag buyer)</label>
+          <textarea name="orderdone_message" rows="2" placeholder="✅ Pesanan {user} sudah selesai diproses. Terima kasih sudah berbelanja!">${escapeHtml(settings.orderdone_message || '')}</textarea>
+        </div>
       </div>
 
       <div style="margin-top:1.2rem;"><button class="btn" type="submit">💾 Simpan Settings</button></div>
