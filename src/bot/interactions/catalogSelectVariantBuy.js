@@ -8,12 +8,14 @@ module.exports = {
     const variantId = Number(interaction.values[0]);
     const variant = catalogVariantRepo.getById(variantId);
 
+    await interaction.deferUpdate();
+
     if (!variant) {
-      await interaction.update({ content: '⚠️ Varian tidak ditemukan.', components: [] });
+      await interaction.editReply({ content: '⚠️ Varian tidak ditemukan.', components: [] });
       return;
     }
 
-    await interaction.update({ content: '⏳ Membuat ticket order kamu...', components: [] });
+    await interaction.editReply({ content: '⏳ Membuat ticket order kamu...', components: [] });
 
     const channel = await TicketService.createOrderTicket(interaction.guild, interaction.user);
 

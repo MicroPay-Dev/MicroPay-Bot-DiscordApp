@@ -7,8 +7,10 @@ module.exports = {
     const productId = Number(interaction.values[0]);
     const product = catalogProductRepo.getById(productId);
 
+    await interaction.deferUpdate();
+
     if (!product) {
-      await interaction.update({ content: '⚠️ Produk tidak ditemukan.', components: [] });
+      await interaction.editReply({ content: '⚠️ Produk tidak ditemukan.', embeds: [], components: [] });
       return;
     }
 
@@ -17,6 +19,6 @@ module.exports = {
       .setDescription(product.description || '(Belum ada deskripsi untuk produk ini)')
       .setColor(0x5865f2);
 
-    await interaction.update({ content: '', embeds: [embed], components: [] });
+    await interaction.editReply({ content: '', embeds: [embed], components: [] });
   },
 };
