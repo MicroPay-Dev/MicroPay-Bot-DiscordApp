@@ -5,13 +5,11 @@ const { switchButtonsRow } = require('./catalogUiHelpers');
 module.exports = {
   customId: 'catalog_select_product_info',
   async execute(interaction) {
-    await interaction.deferUpdate();
-
     const productId = Number(interaction.values[0]);
     const product = catalogProductRepo.getById(productId);
 
     if (!product) {
-      await interaction.editReply({ content: '⚠️ Produk tidak ditemukan.', embeds: [], components: [switchButtonsRow('browse')] });
+      await interaction.update({ content: '⚠️ Produk tidak ditemukan.', embeds: [], components: [switchButtonsRow('browse')] });
       return;
     }
 
@@ -20,6 +18,6 @@ module.exports = {
       .setDescription(product.description || '(Belum ada deskripsi untuk produk ini)')
       .setColor(0x5865f2);
 
-    await interaction.editReply({ content: '', embeds: [embed], components: [switchButtonsRow('browse')] });
+    await interaction.update({ content: '', embeds: [embed], components: [switchButtonsRow('browse')] });
   },
 };

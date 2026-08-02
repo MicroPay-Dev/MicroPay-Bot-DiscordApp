@@ -1,11 +1,16 @@
-const { StringSelectMenuBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { StringSelectMenuBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 const catalogProductRepo = require('../../repositories/catalogProductRepo');
 const catalogVariantRepo = require('../../repositories/catalogVariantRepo');
+const settingsRepo = require('../../repositories/settingsRepo');
+
+function mainButtonsRow() {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId('catalog_browse_products').setLabel('📦 PILIH KATEGORI PRODUK').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId('catalog_browse_variants').setLabel('🛒 PILIH PRODUK UNTUK DIBELI').setStyle(ButtonStyle.Primary)
+  );
+}
 
 function switchButtonsRow(currentMode) {
-  // Lets the user flip between "browse info" and "buy" without ever
-  // needing to click the original public panel buttons again — both
-  // switch buttons just editReply() the SAME ephemeral session message.
   return new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId('catalog_switch_to_browse')
@@ -16,8 +21,25 @@ function switchButtonsRow(currentMode) {
       .setCustomId('catalog_switch_to_buy')
       .setLabel('🛒 Pilih Produk untuk Dibeli')
       .setStyle(currentMode === 'buy' ? ButtonStyle.Primary : ButtonStyle.Secondary)
-      .setDisabled(currentMode === 'buy')
+      .setDisabled(currentMode === 'buy'),
+    new ButtonBuilder().setCustomId('catalog_back_to_main').setLabel('⬅️ Kembali').setStyle(ButtonStyle.Secondary)
   );
+}
+
+// The ONE shared public panel message reverts to this view after any
+// session finishes (e.g. after a ticket is created) or when "Kembali" is
+// pressed — reconstructed from the title/description saved when
+// /setup-catalog-panel was run, so it always matches what Micro configured.
+function buildDefaultPanelUI(guildId) {
+  const settings = settingsRepo.get(guildId);
+  const title = settings?.catalog_panel_title || '🛒 Katalog MICROSTORE';
+  const description =
+    settings?.catalog_panel_description ||
+    'Klik **Pilih Kategori Produk** untuk lihat info produk kami, atau langsung klik **Pilih Produk untuk Dibeli** untuk order.';
+
+  const embed = new EmbedBuilder().setTitle(title).setDescription(description).setColor(0x5865f2);
+
+  return { content: '', embeds: [embed], components: [mainButtonsRow()] };
 }
 
 function buildBrowseUI(guildId) {
@@ -64,4 +86,4 @@ function buildBuyUI(guildId) {
   };
 }
 
-module.exports = { switchButtonsRow, buildBrowseUI, buildBuyUI };
+module.exports = { mainButtonsRow, switchButtonsRow, buildDefaultPanelUI, buildBrowseUI, buildBuyUI };

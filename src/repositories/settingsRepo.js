@@ -124,6 +124,15 @@ module.exports = {
     ).run(enabled ? 1 : 0, channelId || null, roleId || null, guildId);
   },
 
+  setCatalogPanelText(guildId, { title, description }) {
+    this.ensure(guildId);
+    db.prepare(`UPDATE settings SET catalog_panel_title = ?, catalog_panel_description = ? WHERE guild_id = ?`).run(
+      title || null,
+      description || null,
+      guildId
+    );
+  },
+
   setOrderDone(guildId, { channelId, message }) {
     this.ensure(guildId);
     db.prepare(`UPDATE settings SET orderdone_channel = ?, orderdone_message = ? WHERE guild_id = ?`).run(

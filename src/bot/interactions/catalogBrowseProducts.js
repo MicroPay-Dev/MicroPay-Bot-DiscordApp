@@ -3,7 +3,6 @@ const { buildBrowseUI } = require('./catalogUiHelpers');
 module.exports = {
   customId: 'catalog_browse_products',
   async execute(interaction) {
-    const ui = buildBrowseUI(interaction.guild.id);
-    await interaction.reply({ ...ui, ephemeral: true });
+    await interaction.update(buildBrowseUI(interaction.guild.id));
   },
 };

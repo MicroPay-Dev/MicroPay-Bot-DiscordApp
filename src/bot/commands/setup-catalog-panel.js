@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const settingsRepo = require('../../repositories/settingsRepo');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -13,6 +14,10 @@ module.exports = {
     const description =
       interaction.options.getString('deskripsi') ||
       'Klik **Pilih Kategori Produk** untuk lihat info produk kami, atau langsung klik **Pilih Produk untuk Dibeli** untuk order.';
+
+    // Saved so the panel can reset back to this exact view after any
+    // browse/buy session finishes (see catalogUiHelpers.buildDefaultPanelUI).
+    settingsRepo.setCatalogPanelText(interaction.guild.id, { title, description });
 
     const embed = new EmbedBuilder().setTitle(title).setDescription(description).setColor(0x5865f2);
 
