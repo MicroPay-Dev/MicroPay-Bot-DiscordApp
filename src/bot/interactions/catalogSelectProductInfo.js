@@ -1,16 +1,17 @@
 const { EmbedBuilder } = require('discord.js');
 const catalogProductRepo = require('../../repositories/catalogProductRepo');
+const { switchButtonsRow } = require('./catalogUiHelpers');
 
 module.exports = {
   customId: 'catalog_select_product_info',
   async execute(interaction) {
+    await interaction.deferUpdate();
+
     const productId = Number(interaction.values[0]);
     const product = catalogProductRepo.getById(productId);
 
-    await interaction.deferUpdate();
-
     if (!product) {
-      await interaction.editReply({ content: '⚠️ Produk tidak ditemukan.', embeds: [], components: [] });
+      await interaction.editReply({ content: '⚠️ Produk tidak ditemukan.', embeds: [], components: [switchButtonsRow('browse')] });
       return;
     }
 
@@ -19,6 +20,6 @@ module.exports = {
       .setDescription(product.description || '(Belum ada deskripsi untuk produk ini)')
       .setColor(0x5865f2);
 
-    await interaction.editReply({ content: '', embeds: [embed], components: [] });
+    await interaction.editReply({ content: '', embeds: [embed], components: [switchButtonsRow('browse')] });
   },
 };

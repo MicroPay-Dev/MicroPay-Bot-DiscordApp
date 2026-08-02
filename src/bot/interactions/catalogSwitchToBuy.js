@@ -1,9 +1,10 @@
 const { buildBuyUI } = require('./catalogUiHelpers');
 
 module.exports = {
-  customId: 'catalog_browse_variants',
+  customId: 'catalog_switch_to_buy',
   async execute(interaction) {
+    await interaction.deferUpdate();
     const ui = buildBuyUI(interaction.guild.id);
-    await interaction.reply({ ...ui, ephemeral: true });
+    await interaction.editReply(ui);
   },
 };
